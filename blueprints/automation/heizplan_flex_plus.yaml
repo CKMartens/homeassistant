@@ -18,11 +18,14 @@ blueprint:
     - Zeitplan-Helfer (schedule)
     - Climate-Entität(en)
     - Schalter-Helfer Heizsaison (input_boolean)
-    - Optional: Fensterkontakt (binary_sensor), Heim-Zone
+    - Optional: Fenster-/Türkontakte (binary_sensor, mehrere möglich), Heim-Zone
+
+    Bei mehreren Kontakten gilt: eins offen = Fenster-Temperatur,
+    erst wenn alle zu sind, wird zurückgeschaltet.
 
     Basierend auf "Heizplan Flex" von SmartHome for Dummies.
 
-    ℹ️ Version: v1.1-plus
+    ℹ️ Version: v1.2-plus
   domain: automation
   author: Carsten (basierend auf SmartHome for Dummies)
   input:
@@ -86,9 +89,9 @@ blueprint:
           selector:
             boolean: {}
         window_entity:
-          name: Fenster
-          description: Fenster- oder Türkontakt des Raums
-          default: ""
+          name: Fenster / Türen
+          description: Ein oder mehrere Fenster- bzw. Türkontakte des Raums
+          default: []
           selector:
             entity:
               filter:
@@ -96,7 +99,7 @@ blueprint:
                   device_class:
                     - window
                     - door
-              multiple: false
+              multiple: true
         window_time:
           name: Verzögerung
           description: Wie lange das Fenster offen/zu sein muss, bevor reagiert wird
@@ -160,7 +163,7 @@ variables:
   zone_on: !input home_zone_activ
   away_temp: !input away_temperature
   target_temp: >
-    {% if window_on and window_sensor and is_state(window_sensor, 'on') %}
+    {% if window_on and window_sensor | select('is_state', 'on') | list | count > 0 %}
       {{ window_temp }}
     {% elif zone_on and home_zone and states(home_zone) | int(0) < 1 %}
       {{ away_temp }}
@@ -191,13 +194,13 @@ triggers:
   - trigger: template
     value_template: "{{ states(home_zone) | int(0) > 0 }}"
     enabled: !input home_zone_activ
-  # Fenster auf / zu
+  # Mindestens ein Fenster offen / alle Fenster zu
   - trigger: template
-    value_template: "{{ is_state(window_sensor, 'on') }}"
+    value_template: "{{ window_sensor | select('is_state', 'on') | list | count > 0 }}"
     for: !input window_time
     enabled: !input window_activ
   - trigger: template
-    value_template: "{{ is_state(window_sensor, 'off') }}"
+    value_template: "{{ window_sensor | select('is_state', 'on') | list | count == 0 }}"
     for: !input window_time
     enabled: !input window_activ
 
