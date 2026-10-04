@@ -23,9 +23,13 @@ blueprint:
     Bei mehreren Kontakten gilt: eins offen = Fenster-Temperatur,
     erst wenn alle zu sind, wird zurückgeschaltet.
 
+    **Verkalkungsschutz (optional):** Außerhalb der Heizsaison fährt das
+    Ventil einmal pro Woche zum gewählten Zeitpunkt kurz auf und wird danach
+    wieder ausgeschaltet (hvac_mode off).
+
     Basierend auf "Heizplan Flex" von SmartHome for Dummies.
 
-    ℹ️ Version: v1.2-plus
+    ℹ️ Version: v1.3-plus
   domain: automation
   author: Carsten (basierend auf SmartHome for Dummies)
   input:
@@ -148,6 +152,64 @@ blueprint:
               unit_of_measurement: °C
               mode: slider
 
+    verkalkung:
+      name: Verkalkungsschutz
+      icon: mdi:water-sync
+      collapsed: true
+      input:
+        descale_activ:
+          name: Verkalkungsschutz aktivieren?
+          description: Nur außerhalb der Heizsaison (Heizsaison-Schalter aus)
+          default: false
+          selector:
+            boolean: {}
+        descale_weekday:
+          name: Wochentag
+          default: mon
+          selector:
+            select:
+              options:
+                - label: Montag
+                  value: mon
+                - label: Dienstag
+                  value: tue
+                - label: Mittwoch
+                  value: wed
+                - label: Donnerstag
+                  value: thu
+                - label: Freitag
+                  value: fri
+                - label: Samstag
+                  value: sat
+                - label: Sonntag
+                  value: sun
+        descale_time:
+          name: Uhrzeit
+          default: "10:00:00"
+          selector:
+            time: {}
+        descale_temperature:
+          name: Temperatur für die Fahrt
+          description: Hoch genug, damit das Ventil sicher ganz öffnet (tado max. 25 °C)
+          default: 25
+          selector:
+            number:
+              min: 15
+              max: 30
+              step: 0.5
+              unit_of_measurement: °C
+              mode: slider
+        descale_duration:
+          name: Dauer
+          description: Wie lange das Ventil offen bleibt, bevor es wieder ausgeschaltet wird
+          default: 5
+          selector:
+            number:
+              min: 1
+              max: 30
+              unit_of_measurement: min
+              mode: slider
+
 mode: restart
 
 trigger_variables:
@@ -194,6 +256,11 @@ triggers:
   - trigger: template
     value_template: "{{ states(home_zone) | int(0) > 0 }}"
     enabled: !input home_zone_activ
+  # Verkalkungsschutz: wöchentlicher Zeitpunkt (Wochentag wird in conditions geprüft)
+  - trigger: time
+    at: !input descale_time
+    id: descale
+    enabled: !input descale_activ
   # Mindestens ein Fenster offen / alle Fenster zu
   - trigger: template
     value_template: "{{ window_sensor | select('is_state', 'on') | list | count > 0 }}"
@@ -205,14 +272,52 @@ triggers:
     enabled: !input window_activ
 
 conditions:
-  - condition: state
-    entity_id: !input heizsaison
-    state: "on"
+  - condition: or
+    conditions:
+      # Normalbetrieb: nur in der Heizsaison, nicht für den Verkalkungs-Trigger
+      - condition: and
+        conditions:
+          - condition: state
+            entity_id: !input heizsaison
+            state: "on"
+          - condition: not
+            conditions:
+              - condition: trigger
+                id: descale
+      # Verkalkungsschutz: nur außerhalb der Heizsaison am gewählten Wochentag
+      - condition: and
+        conditions:
+          - condition: trigger
+            id: descale
+          - condition: state
+            entity_id: !input heizsaison
+            state: "off"
+          - condition: time
+            weekday: !input descale_weekday
 
 actions:
-  - action: climate.set_temperature
-    target:
-      entity_id: !input climate_entity
-    data:
-      temperature: "{{ target_temp | float }}"
-      hvac_mode: heat
+  - choose:
+      - conditions:
+          - condition: trigger
+            id: descale
+        sequence:
+          - action: climate.set_temperature
+            target:
+              entity_id: !input climate_entity
+            data:
+              temperature: !input descale_temperature
+              hvac_mode: heat
+          - delay:
+              minutes: !input descale_duration
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: "off"
+    default:
+      - action: climate.set_temperature
+        target:
+          entity_id: !input climate_entity
+        data:
+          temperature: "{{ target_temp | float }}"
+          hvac_mode: heat
