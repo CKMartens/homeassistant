@@ -1,0 +1,215 @@
+blueprint:
+  name: Heizplan Flex Plus
+  description: >
+    ## Heizplan Flex Plus
+
+    Einfache Heizungssteuerung nach einem Zeitplan-Helfer (schedule).
+    Zeitplan-Block aktiv = Komfort-Temperatur, außerhalb = ECO-Temperatur.
+
+    **Priorität der Soll-Temperatur:**
+    1. Fenster offen → Fenster-Temperatur (optional)
+    2. Niemand zu Hause → Abwesenheits-Temperatur (optional)
+    3. Zeitplan aktiv → Komfort, sonst ECO
+
+    Läuft nur, wenn der Heizsaison-Schalter an ist. Rechnet nach HA-Neustart
+    und beim Einschalten der Heizsaison die Soll-Temperatur neu.
+
+    ### Voraussetzungen
+    - Zeitplan-Helfer (schedule)
+    - Climate-Entität(en)
+    - Schalter-Helfer Heizsaison (input_boolean)
+    - Optional: Fensterkontakt (binary_sensor), Heim-Zone
+
+    Basierend auf "Heizplan Flex" von SmartHome for Dummies.
+
+    ℹ️ Version: v1.1-plus
+  domain: automation
+  author: Carsten (basierend auf SmartHome for Dummies)
+  input:
+    basis:
+      name: Grundeinstellungen
+      icon: mdi:radiator
+      input:
+        heizsaison:
+          name: Heizsaison
+          description: Schalter-Helfer, der vorgibt, ob die Heizsaison aktiv ist.
+          selector:
+            entity:
+              filter:
+                - domain: input_boolean
+              multiple: false
+        climate_entity:
+          name: Thermostate
+          description: Thermostat(e) (Climate-Entitäten) des Raums
+          selector:
+            entity:
+              filter:
+                - domain: climate
+              multiple: true
+        schedule_entity:
+          name: Heizplan
+          description: Zeitplan-Helfer. Aktive Blöcke = Komfort.
+          selector:
+            entity:
+              filter:
+                - domain: schedule
+              multiple: false
+        comfort_temperature:
+          name: Komfort-Temperatur
+          default: 22
+          selector:
+            number:
+              min: 4
+              max: 32
+              step: 0.5
+              unit_of_measurement: °C
+              mode: slider
+        eco_temperature:
+          name: ECO-Temperatur
+          default: 17
+          selector:
+            number:
+              min: 4
+              max: 32
+              step: 0.5
+              unit_of_measurement: °C
+              mode: slider
+
+    fenster:
+      name: Fenster
+      icon: mdi:window-open-variant
+      collapsed: true
+      input:
+        window_activ:
+          name: Fenstersensor berücksichtigen?
+          default: false
+          selector:
+            boolean: {}
+        window_entity:
+          name: Fenster
+          description: Fenster- oder Türkontakt des Raums
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: binary_sensor
+                  device_class:
+                    - window
+                    - door
+              multiple: false
+        window_time:
+          name: Verzögerung
+          description: Wie lange das Fenster offen/zu sein muss, bevor reagiert wird
+          default: "00:00:30"
+          selector:
+            time: {}
+        window_temperature:
+          name: Temperatur bei offenem Fenster
+          description: Hinweis – viele Thermostate (z. B. tado) haben 5 °C als Minimum.
+          default: 5
+          selector:
+            number:
+              min: 4
+              max: 32
+              step: 0.5
+              unit_of_measurement: °C
+              mode: slider
+
+    abwesenheit:
+      name: Abwesenheit
+      icon: mdi:home-export-outline
+      collapsed: true
+      input:
+        home_zone_activ:
+          name: An- und Abwesenheit berücksichtigen?
+          default: false
+          selector:
+            boolean: {}
+        home_zone:
+          name: Heim-Zone
+          description: Abwesend = 0 Personen in der Zone
+          default: ""
+          selector:
+            entity:
+              filter:
+                - domain: zone
+              multiple: false
+        away_temperature:
+          name: Temperatur bei Abwesenheit
+          default: 16
+          selector:
+            number:
+              min: 4
+              max: 32
+              step: 0.5
+              unit_of_measurement: °C
+              mode: slider
+
+mode: restart
+
+trigger_variables:
+  window_sensor: !input window_entity
+  home_zone: !input home_zone
+
+variables:
+  schedule_entity: !input schedule_entity
+  comfort_temp: !input comfort_temperature
+  eco_temp: !input eco_temperature
+  window_on: !input window_activ
+  window_temp: !input window_temperature
+  zone_on: !input home_zone_activ
+  away_temp: !input away_temperature
+  target_temp: >
+    {% if window_on and window_sensor and is_state(window_sensor, 'on') %}
+      {{ window_temp }}
+    {% elif zone_on and home_zone and states(home_zone) | int(0) < 1 %}
+      {{ away_temp }}
+    {% elif is_state(schedule_entity, 'on') %}
+      {{ comfort_temp }}
+    {% else %}
+      {{ eco_temp }}
+    {% endif %}
+
+triggers:
+  # Zeitplan wechselt (nur echte Zustandswechsel, keine Attribut-Updates)
+  - trigger: state
+    entity_id: !input schedule_entity
+    to:
+      - "on"
+      - "off"
+  # Heizsaison wird eingeschaltet
+  - trigger: state
+    entity_id: !input heizsaison
+    to: "on"
+  # HA-Neustart
+  - trigger: homeassistant
+    event: start
+  # Letzte Person geht / erste Person kommt
+  - trigger: template
+    value_template: "{{ states(home_zone) | int(0) < 1 }}"
+    enabled: !input home_zone_activ
+  - trigger: template
+    value_template: "{{ states(home_zone) | int(0) > 0 }}"
+    enabled: !input home_zone_activ
+  # Fenster auf / zu
+  - trigger: template
+    value_template: "{{ is_state(window_sensor, 'on') }}"
+    for: !input window_time
+    enabled: !input window_activ
+  - trigger: template
+    value_template: "{{ is_state(window_sensor, 'off') }}"
+    for: !input window_time
+    enabled: !input window_activ
+
+conditions:
+  - condition: state
+    entity_id: !input heizsaison
+    state: "on"
+
+actions:
+  - action: climate.set_temperature
+    target:
+      entity_id: !input climate_entity
+    data:
+      temperature: "{{ target_temp | float }}"
+      hvac_mode: heat
