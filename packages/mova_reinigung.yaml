@@ -1,0 +1,208 @@
+# =============================================================================
+# Mova (in HA: MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt"
+# Stand: 2026-10-07, in HA eingespielt (Skript, Automation, Helper per UI/ha-mcp)
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder die drei Blöcke einzeln in die UI kopieren
+#      (Helper anlegen, Skript- und Automations-Editor -> "In YAML bearbeiten")
+#
+# zone.home zählt person.carsten_martens (Pixel 9) und person.elke_martens (Pixel 9a).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1) Helper: merkt sich, wann zuletzt automatisch gereinigt wurde
+#    -> sorgt für "höchstens einmal pro Tag"
+# -----------------------------------------------------------------------------
+input_datetime:
+  mova_letzte_auto_reinigung:
+    name: "Mova letzte Auto-Reinigung"
+    has_date: true
+    has_time: false
+    icon: mdi:robot-vacuum
+
+# -----------------------------------------------------------------------------
+# 2) Skript: setzt den Reinigungsmodus und startet den Robi
+#    Separat, damit du es auch per Dashboard-Button oder manuell testen kannst.
+# -----------------------------------------------------------------------------
+script:
+  haushalt_mova_reinigung_starten:
+    alias: "Haushalt – Mova Reinigung starten"
+    description: >-
+      Stellt am Mova Z60 Reinigungsart, Saugstärke und Wasserstufe passend zum
+      gewählten Modus ein und startet eine Komplettreinigung.
+    icon: mdi:robot-vacuum
+    mode: single
+    fields:
+      modus:
+        name: Modus
+        description: "saugen | saugen_wischen | intensiv"
+        required: true
+        default: saugen
+        selector:
+          select:
+            options:
+              - saugen
+              - saugen_wischen
+              - intensiv
+    variables:
+      # Echte entity_ids, per ha-mcp ausgelesen am 2026-10-07
+      # (MOVA Z60 Ultra Roller, Integration dreame_vacuum / HACS)
+      robi: vacuum.z60_ultra_roller_standalone
+      ent_reinigungsart: select.z60_ultra_roller_standalone_cleaning_mode   # sweeping | mopping | sweeping_and_mopping | mopping_after_sweeping
+      ent_saugstaerke: select.z60_ultra_roller_standalone_suction_level     # quiet | standard | strong | turbo
+      ent_route: select.z60_ultra_roller_standalone_cleaning_route          # quick | standard | intensive | deep
+      ent_feuchte: number.z60_ultra_roller_standalone_wetness_level         # 1-32, nur verfügbar, wenn gewischt wird
+      ent_individuell: switch.z60_ultra_roller_standalone_customized_cleaning
+
+      profile:
+        saugen:
+          reinigungsart: "sweeping"
+          saugstaerke: "standard"
+          route: "standard"
+          feuchte: null
+        saugen_wischen:
+          reinigungsart: "sweeping_and_mopping"
+          saugstaerke: "standard"
+          route: "standard"
+          feuchte: 16           # aktueller Wert aus der App
+        intensiv:
+          reinigungsart: "sweeping_and_mopping"
+          saugstaerke: "turbo"
+          route: "intensive"    # "deep" wäre noch gründlicher (und langsamer)
+          feuchte: 22
+      p: "{{ profile[modus] }}"
+
+    sequence:
+      # Robi muss erreichbar sein und in der Station stehen
+      - condition: template
+        value_template: "{{ states(robi) in ['docked', 'idle'] }}"
+        alias: "Robi bereit (docked/idle)"
+
+      # Individuelle Reinigung (Raum-Profile aus der App) würde die globalen
+      # Werte übersteuern -> sicherstellen, dass sie aus ist
+      - if:
+          - condition: template
+            value_template: "{{ is_state(ent_individuell, 'on') }}"
+        then:
+          - action: switch.turn_off
+            target:
+              entity_id: "{{ ent_individuell }}"
+          - delay: "00:00:03"
+
+      - action: select.select_option
+        target:
+          entity_id: "{{ ent_reinigungsart }}"
+        data:
+          option: "{{ p.reinigungsart }}"
+
+      - action: select.select_option
+        target:
+          entity_id: "{{ ent_saugstaerke }}"
+        data:
+          option: "{{ p.saugstaerke }}"
+
+      - action: select.select_option
+        target:
+          entity_id: "{{ ent_route }}"
+        data:
+          option: "{{ p.route }}"
+
+      # Feuchte-Regler wird erst nach dem Wechsel auf einen Wischmodus verfügbar
+      - if:
+          - condition: template
+            value_template: "{{ p.feuchte is not none }}"
+        then:
+          - wait_template: "{{ states(ent_feuchte) not in ['unknown', 'unavailable'] }}"
+            timeout: "00:00:30"
+            continue_on_timeout: true
+          - action: number.set_value
+            target:
+              entity_id: "{{ ent_feuchte }}"
+            data:
+              value: "{{ p.feuchte }}"
+            continue_on_error: true
+
+      # kurz warten, bis der Robi die Einstellungen übernommen hat (Cloud-Latenz)
+      - delay: "00:00:05"
+
+      - action: vacuum.start
+        target:
+          entity_id: "{{ robi }}"
+
+# -----------------------------------------------------------------------------
+# 3) Automation: alle weg + Wochentag + Kalendereintrag heute -> Skript starten
+# -----------------------------------------------------------------------------
+automation:
+  - id: haushalt_mova_reinigung_bei_abwesenheit
+    alias: "Haushalt – Mova Reinigung bei Abwesenheit"
+    description: >-
+      Startet an Wochentagen den Mova Z60, sobald niemand mehr zuhause ist, und
+      wählt den Modus anhand des heutigen Ganztagstermins im Kalender "Haushalt"
+      (saugen / saugen & wischen / Intensiv saugen & wischen), höchstens einmal pro Tag.
+    mode: single
+
+    triggers:
+      # zone.home zählt die Personen zuhause -> 0 = alle weg
+      - trigger: state
+        entity_id: zone.home
+        to: "0"
+        for: "00:10:00"   # 10 min Puffer, falls jemand nochmal zurückkommt
+
+    conditions:
+      - condition: time
+        weekday: [mon, tue, wed, thu, fri]
+        after: "07:00:00"
+        before: "17:00:00"
+      # heute noch nicht automatisch gereinigt
+      - condition: template
+        value_template: >-
+          {{ states('input_datetime.mova_letzte_auto_reinigung') != now().date() | string }}
+      # Robi erreichbar und in der Station
+      - condition: state
+        entity_id: vacuum.z60_ultra_roller_standalone
+        state: docked
+
+    actions:
+      - action: calendar.get_events
+        target:
+          entity_id: calendar.haushalt
+        data:
+          start_date_time: "{{ today_at('00:00') }}"
+          end_date_time: "{{ today_at('23:59') }}"
+        response_variable: kalender
+
+      - variables:
+          titel: >-
+            {{ kalender['calendar.haushalt'].events
+               | map(attribute='summary')
+               | map('lower') | map('trim') | list }}
+          # Reihenfolge wichtig: der "stärkste" Eintrag gewinnt, falls mehrere drinstehen
+          modus: >-
+            {%- if 'intensiv saugen & wischen' in titel -%}intensiv
+            {%- elif 'saugen & wischen' in titel -%}saugen_wischen
+            {%- elif 'saugen' in titel -%}saugen
+            {%- else -%}keiner{%- endif -%}
+
+      - condition: template
+        value_template: "{{ modus != 'keiner' }}"
+        alias: "Heute steht eine Reinigung im Kalender"
+
+      - action: script.haushalt_mova_reinigung_starten
+        data:
+          modus: "{{ modus }}"
+
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.mova_letzte_auto_reinigung
+        data:
+          date: "{{ now().date() }}"
+
+      - action: persistent_notification.create
+        data:
+          notification_id: mova_auto_reinigung
+          title: "Mova Z60 gestartet"
+          message: >-
+            Alle sind weg – Reinigung "{{ modus }}" laut Kalender Haushalt
+            um {{ now().strftime('%H:%M') }} gestartet.
