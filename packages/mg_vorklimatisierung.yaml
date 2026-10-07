@@ -1,0 +1,247 @@
+# =============================================================================
+# MG MGS5 EV (Firmenwagen) – Vorklimatisierung an Bürotagen
+# Stand: 2026-10-07, in HA eingespielt (Automation + Helper per ha-mcp)
+#   automation.auto_mg_vorklimatisierung_burotage (id: auto_mg_vorklimatisierung_buero)
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder die Blöcke einzeln in die UI kopieren
+#      (Helper anlegen, Automations-Editor -> "In YAML bearbeiten")
+#
+# Ablauf:
+#   22:00  Nacht-Snapshot: Stundenvorhersage der nächsten 12 h (Bewölkung,
+#          Niederschlag, Wind) in drei Helper schreiben.
+#   Bürobeginn − 70 min (Kalender-Trigger): Stufe 0–3 aus WS2350 + Nachtwerten,
+#          SoC-Sperre < 20 %, dann 1 bzw. 2 Klimazyklen à 10 min.
+#   Abfahrt = Bürobeginn − 45 min. Start: Abfahrt − 10 min (Stufe 3: − 20 min).
+#   Details und Stufentabelle: docs/mg_vorklimatisierung.md
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1) Helper: Nachtwerte aus dem 22:00-Snapshot
+#    (in HA heißt der erste input_number.mg_nacht_bewolkung – ohne "oe")
+# -----------------------------------------------------------------------------
+input_number:
+  mg_nacht_bewolkung:
+    name: "MG Nacht Bewölkung"
+    min: 0
+    max: 100
+    step: 1
+    unit_of_measurement: "%"
+    mode: box
+    icon: mdi:weather-cloudy
+  mg_nacht_niederschlag:
+    name: "MG Nacht Niederschlag"
+    min: 0
+    max: 50
+    step: 0.1
+    unit_of_measurement: mm
+    mode: box
+    icon: mdi:weather-rainy
+  mg_nacht_wind:
+    name: "MG Nacht Wind"
+    min: 0
+    max: 100
+    step: 0.1
+    unit_of_measurement: km/h
+    mode: box
+    icon: mdi:weather-windy
+
+# -----------------------------------------------------------------------------
+# 2) Automation
+#    Hinweis: abhängige Variablen stehen bewusst in getrennten variables-
+#    Schritten – ha-mcp speichert Keys alphabetisch sortiert, und HA rendert
+#    einen variables-Block Key für Key.
+# -----------------------------------------------------------------------------
+automation:
+  - id: auto_mg_vorklimatisierung_buero
+    alias: "Auto – MG Vorklimatisierung Bürotage"
+    description: >-
+      Klimatisiert den MG MGS5 EV an Bürotagen (Termin 'Büro' in
+      calendar.dienst_carsten) vor der Abfahrt (Bürobeginn − 45 min) je nach
+      Frost-/Beschlagsrisiko in 0–2 Zyklen vor, damit die Scheiben frei sind;
+      um 22:00 wird die Nacht-Wettervorhersage in Helpern gesichert.
+    mode: single
+    max_exceeded: silent
+
+    triggers:
+      - trigger: time
+        at: "22:00:00"
+        id: nacht_snapshot
+      - trigger: calendar
+        event: start
+        entity_id: calendar.dienst_carsten
+        offset: "-01:10:00"
+        id: pruefen
+
+    actions:
+      - choose:
+          # ===== Nacht-Snapshot: Forecast der nächsten 12 h sichern =====
+          - alias: "Nacht-Snapshot: Forecast der nächsten 12 h sichern"
+            conditions:
+              - condition: trigger
+                id: nacht_snapshot
+            sequence:
+              - action: weather.get_forecasts
+                target:
+                  entity_id: weather.forecast_home
+                data:
+                  type: hourly
+                response_variable: fc
+              - variables:
+                  f: "{{ fc['weather.forecast_home'].forecast[:12] }}"
+              - variables:
+                  n: "{{ [f | length, 1] | max }}"
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.mg_nacht_bewolkung
+                data:
+                  value: >-
+                    {{ ((f | map(attribute='cloud_coverage') | map('float', 0) | sum) / n) | round(0) }}
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.mg_nacht_niederschlag
+                data:
+                  value: >-
+                    {{ [(f | map(attribute='precipitation') | map('float', 0) | sum) | round(1), 50] | min }}
+              - action: input_number.set_value
+                target:
+                  entity_id: input_number.mg_nacht_wind
+                data:
+                  value: >-
+                    {{ ((f | map(attribute='wind_speed') | map('float', 0) | sum) / n) | round(1) }}
+
+          # ===== Morgens: Bürotag prüfen und klimatisieren =====
+          - alias: "Morgens: Bürotag prüfen und klimatisieren"
+            conditions:
+              - condition: trigger
+                id: pruefen
+              - condition: template
+                value_template: "{{ 'büro' in (trigger.calendar_event.summary | lower) }}"
+            sequence:
+              - alias: "Wettersensoren liefern gültige Werte"
+                condition: template
+                value_template: >-
+                  {{ has_value('sensor.ws2350_v2_38_outdoor_temperature')
+                     and has_value('sensor.ws2350_v2_38_dewpoint')
+                     and has_value('sensor.ws2350_v2_38_humidity') }}
+
+              - alias: "Messwerte lesen"
+                variables:
+                  t: "{{ states('sensor.ws2350_v2_38_outdoor_temperature') | float }}"
+                  td: "{{ states('sensor.ws2350_v2_38_dewpoint') | float }}"
+                  rh: "{{ states('sensor.ws2350_v2_38_humidity') | float }}"
+                  wolken: "{{ states('input_number.mg_nacht_bewolkung') | float(100) }}"
+                  regen: "{{ states('input_number.mg_nacht_niederschlag') | float(0) }}"
+                  wind: "{{ states('input_number.mg_nacht_wind') | float(20) }}"
+              - alias: "Taupunktabstand"
+                variables:
+                  spread: "{{ t - td }}"
+              - alias: "Stufe bestimmen"
+                variables:
+                  stufe: >-
+                    {% if t <= -3 or (t <= 1 and regen >= 0.2) %}3{% elif t <= 0 or (t <= 3 and wolken < 50 and wind < 11) %}2{% elif t <= 10 and (spread <= 3 or rh >= 85 or regen >= 0.2) %}1{% else %}0{% endif %}
+              - alias: "Zyklen und Zieltemperatur"
+                variables:
+                  zyklen: "{{ 2 if stufe | int == 3 else 1 }}"
+                  zieltemp: >-
+                    {{ 22 if stufe | int == 1
+                       else state_attr('number.mg_mgs5_ev_climate_target_temperature', 'max') | float(26) }}
+
+              - alias: "Nur bei Frost-/Beschlagsrisiko weitermachen"
+                condition: template
+                value_template: "{{ stufe | int > 0 }}"
+
+              - alias: "SoC-Sperre (Laternenparker, kein Nachladen über Nacht)"
+                if:
+                  - condition: template
+                    value_template: >-
+                      {{ not has_value('sensor.mg_mgs5_ev_state_of_charge')
+                         or states('sensor.mg_mgs5_ev_state_of_charge') | float(0) < 20 }}
+                then:
+                  - action: notify.mobile_app_pixel_9
+                    data:
+                      title: "MG Vorklimatisierung ausgelassen"
+                      message: >-
+                        Stufe {{ stufe }} ({{ t }} °C), aber SoC
+                        {{ states('sensor.mg_mgs5_ev_state_of_charge') }} % < 20 %.
+                        Bitte Scheiben selbst freimachen.
+                  - stop: "SoC zu niedrig"
+
+              # Prüfung = Bürobeginn − 70 min
+              #   Stufe 3:   Start Abfahrt − 20 min = Bürobeginn − 65 min -> +5 min
+              #   Stufe 1/2: Start Abfahrt − 10 min = Bürobeginn − 55 min -> +15 min
+              - alias: "Warten bis Startzeitpunkt (Stufe 3: Abfahrt − 20 min, sonst Abfahrt − 10 min)"
+                delay:
+                  minutes: "{{ 5 if stufe | int == 3 else 15 }}"
+
+              - repeat:
+                  count: "{{ zyklen }}"
+                  sequence:
+                    - action: select.select_option
+                      target:
+                        entity_id: select.mg_mgs5_ev_climate_mode
+                      data:
+                        option: "Heat/cool"
+                    - action: number.set_value
+                      target:
+                        entity_id: number.mg_mgs5_ev_climate_target_temperature
+                      data:
+                        value: "{{ zieltemp }}"
+                    - action: switch.turn_on
+                      target:
+                        entity_id: switch.mg_mgs5_ev_air_conditioning
+
+                    # Startbestätigung abwarten, sonst 1× Retry + Push
+                    - alias: "Startbestätigung abwarten (wait_template, weil der Zustand schon vor Wartebeginn umspringen kann)"
+                      wait_template: "{{ is_state('switch.mg_mgs5_ev_air_conditioning', 'on') }}"
+                      timeout: "00:03:00"
+                    - if:
+                        - condition: template
+                          value_template: "{{ not wait.completed }}"
+                      then:
+                        - action: switch.turn_on
+                          target:
+                            entity_id: switch.mg_mgs5_ev_air_conditioning
+                        - wait_template: "{{ is_state('switch.mg_mgs5_ev_air_conditioning', 'on') }}"
+                          timeout: "00:03:00"
+                        - if:
+                            - condition: template
+                              value_template: "{{ not wait.completed }}"
+                          then:
+                            - action: notify.mobile_app_pixel_9
+                              data:
+                                title: "MG Vorklimatisierung fehlgeschlagen"
+                                message: >-
+                                  Klima ließ sich nicht starten (Stufe {{ stufe }},
+                                  {{ t }} °C). Bitte MG-App prüfen.
+                            - stop: "Start nicht bestätigt"
+
+                    - action: switch.turn_on
+                      target:
+                        entity_id: switch.mg_mgs5_ev_rear_window_defrost
+                    - if:
+                        - condition: template
+                          value_template: "{{ t <= 5 }}"
+                      then:
+                        - action: switch.turn_on
+                          target:
+                            entity_id: switch.mg_mgs5_ev_heated_steering_wheel
+
+                    # Info-Push beim ersten Zyklus
+                    - if:
+                        - condition: template
+                          value_template: "{{ repeat.first }}"
+                      then:
+                        - action: notify.mobile_app_pixel_9
+                          data:
+                            title: "MG wird vorklimatisiert"
+                            message: >-
+                              Stufe {{ stufe }}: {{ t }} °C, Taupunktabstand
+                              {{ spread | round(1) }} K, {{ zyklen }} Zyklus/Zyklen,
+                              {{ zieltemp | int }} °C.
+
+                    - alias: "Zyklusende abwarten (Standard 10 min), bevor ggf. Zyklus 2 startet"
+                      wait_template: "{{ is_state('switch.mg_mgs5_ev_air_conditioning', 'off') }}"
+                      timeout: "00:13:00"
