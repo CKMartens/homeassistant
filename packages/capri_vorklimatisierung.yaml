@@ -1,0 +1,191 @@
+# =============================================================================
+# Ford Capri (Elke) – Vorklimatisierung an Diensttagen
+# Stand: 2026-10-07, in HA eingespielt (Automation per ha-mcp)
+#   automation.auto_capri_vorklimatisierung_diensttage (id: auto_capri_vorklimatisierung_dienst)
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder die Automation in den Automations-Editor kopieren ("In YAML bearbeiten")
+#
+# Abhängigkeit: nutzt die Nachtwerte input_number.mg_nacht_* aus
+#   packages/mg_vorklimatisierung.yaml (22:00-Snapshot der MG-Automation).
+#
+# Ablauf:
+#   Dienstbeginn − 95 min (Kalender-Trigger, nur Termine "Dienst"):
+#          Stufe 0–3 wie beim MG, SoC-Sperre < 20 % (außer am Kabel).
+#   Abfahrt = Dienstbeginn − 60 min (Elke fährt gut 40 min).
+#   Start per FordPass-Fernstart: Abfahrt − 15 min, Stufe 3: Abfahrt − 30 min
+#          und nach 10 min einmal "Laufzeit verlängern".
+#   Details: docs/capri_vorklimatisierung.md
+# =============================================================================
+
+automation:
+  - id: auto_capri_vorklimatisierung_dienst
+    alias: "Auto – Capri Vorklimatisierung Diensttage"
+    description: >-
+      Klimatisiert Elkes Ford Capri an Diensttagen (Termin 'Dienst' in
+      calendar.dienst_elke) vor der Abfahrt (Dienstbeginn − 60 min) je nach
+      Frost-/Beschlagsrisiko per FordPass-Fernstart vor, bei Frost mit
+      Frontscheibenheizung; nutzt die Nachtwerte der MG-Automation (22:00-Snapshot).
+    mode: single
+    max_exceeded: silent
+
+    triggers:
+      - trigger: calendar
+        event: start
+        entity_id: calendar.dienst_elke
+        offset: "-01:35:00"
+        id: pruefen
+
+    conditions:
+      - alias: "Nur Termine 'Dienst' (Schulung o. ä. ignorieren)"
+        condition: template
+        value_template: "{{ (trigger.calendar_event.summary | lower | trim) == 'dienst' }}"
+
+    actions:
+      - alias: "Wettersensoren liefern gültige Werte"
+        condition: template
+        value_template: >-
+          {{ has_value('sensor.ws2350_v2_38_outdoor_temperature')
+             and has_value('sensor.ws2350_v2_38_dewpoint')
+             and has_value('sensor.ws2350_v2_38_humidity') }}
+
+      # Abhängige Variablen in getrennten Schritten (ha-mcp sortiert Keys alphabetisch)
+      - alias: "Messwerte lesen"
+        variables:
+          t: "{{ states('sensor.ws2350_v2_38_outdoor_temperature') | float }}"
+          td: "{{ states('sensor.ws2350_v2_38_dewpoint') | float }}"
+          rh: "{{ states('sensor.ws2350_v2_38_humidity') | float }}"
+          wolken: "{{ states('input_number.mg_nacht_bewolkung') | float(100) }}"
+          regen: "{{ states('input_number.mg_nacht_niederschlag') | float(0) }}"
+          wind: "{{ states('input_number.mg_nacht_wind') | float(20) }}"
+      - alias: "Taupunktabstand"
+        variables:
+          spread: "{{ t - td }}"
+      - alias: "Stufe bestimmen (wie MG)"
+        variables:
+          stufe: >-
+            {% if t <= -3 or (t <= 1 and regen >= 0.2) %}3{% elif t <= 0 or (t <= 3 and wolken < 50 and wind < 11) %}2{% elif t <= 10 and (spread <= 3 or rh >= 85 or regen >= 0.2) %}1{% else %}0{% endif %}
+      - alias: "Temperatur-Option"
+        variables:
+          temp_option: "{{ '22_0' if stufe | int == 1 else 'hi' }}"
+
+      - alias: "Nur bei Frost-/Beschlagsrisiko weitermachen"
+        condition: template
+        value_template: "{{ stufe | int > 0 }}"
+
+      - alias: "SoC-Sperre (unter 20 % nur, wenn er am Kabel hängt)"
+        if:
+          - condition: template
+            value_template: >-
+              {{ (not has_value('sensor.fordpass_wf0spbef1tsd01110_soc')
+                  or states('sensor.fordpass_wf0spbef1tsd01110_soc') | float(0) < 20)
+                 and not is_state('sensor.fordpass_wf0spbef1tsd01110_elvehplug', 'CONNECTED') }}
+        then:
+          - action: notify.mobile_app_pixel_9a
+            data:
+              title: "Capri Vorklimatisierung ausgelassen"
+              message: >-
+                Stufe {{ stufe }} ({{ t }} °C), aber Akku nur
+                {{ states('sensor.fordpass_wf0spbef1tsd01110_soc') }} %.
+                Bitte Scheiben selbst freimachen.
+          - stop: "SoC zu niedrig"
+
+      # Prüfung = Dienstbeginn − 95 min = Abfahrt − 35 min
+      #   Stufe 3:   Start Abfahrt − 30 min -> +5 min
+      #   Stufe 1/2: Start Abfahrt − 15 min -> +20 min
+      - alias: "Warten bis Start (Stufe 3: Abfahrt − 30 min mit Verlängerung, sonst Abfahrt − 15 min)"
+        delay:
+          minutes: "{{ 5 if stufe | int == 3 else 20 }}"
+
+      - alias: "Klima-Einstellungen für den Fernstart setzen"
+        action: select.select_option
+        target:
+          entity_id: select.fordpass_wf0spbef1tsd01110_rcctemperature
+        data:
+          option: "{{ temp_option }}"
+      - action: switch.turn_on
+        target:
+          entity_id: switch.fordpass_wf0spbef1tsd01110_rccdefrostrear
+      - if:
+          - condition: template
+            value_template: "{{ stufe | int >= 2 }}"
+        then:
+          - action: switch.turn_on
+            target:
+              entity_id: switch.fordpass_wf0spbef1tsd01110_rccdefrostfront
+        else:
+          - action: switch.turn_off
+            target:
+              entity_id: switch.fordpass_wf0spbef1tsd01110_rccdefrostfront
+
+      - alias: "Fernstart"
+        action: switch.turn_on
+        target:
+          entity_id: switch.fordpass_wf0spbef1tsd01110_ignition
+
+      # Startbestätigung abwarten; sonst Remote Sync, dann genau 1 Retry + Push
+      - alias: "Startbestätigung abwarten (wait_template, weil der Zustand schon vor Wartebeginn umspringen kann)"
+        wait_template: >-
+          {{ is_state('switch.fordpass_wf0spbef1tsd01110_ignition', 'on')
+             or is_state('sensor.fordpass_wf0spbef1tsd01110_remotestartstatus', 'Active') }}
+        timeout: "00:03:00"
+      - if:
+          - condition: template
+            value_template: "{{ not wait.completed }}"
+        then:
+          - alias: "Erst Daten vom Auto holen, bevor erneut gestartet wird"
+            action: button.press
+            target:
+              entity_id: button.fordpass_wf0spbef1tsd01110_request_refresh
+          - wait_template: >-
+              {{ is_state('switch.fordpass_wf0spbef1tsd01110_ignition', 'on')
+                 or is_state('sensor.fordpass_wf0spbef1tsd01110_remotestartstatus', 'Active') }}
+            timeout: "00:01:00"
+          - if:
+              - condition: template
+                value_template: "{{ not wait.completed }}"
+            then:
+              - alias: "Ein Retry"
+                action: switch.turn_on
+                target:
+                  entity_id: switch.fordpass_wf0spbef1tsd01110_ignition
+              - wait_template: >-
+                  {{ is_state('switch.fordpass_wf0spbef1tsd01110_ignition', 'on')
+                     or is_state('sensor.fordpass_wf0spbef1tsd01110_remotestartstatus', 'Active') }}
+                timeout: "00:03:00"
+              - if:
+                  - condition: template
+                    value_template: "{{ not wait.completed }}"
+                then:
+                  - action: notify.mobile_app_pixel_9a
+                    data:
+                      title: "Capri Vorklimatisierung fehlgeschlagen"
+                      message: >-
+                        Fernstart ließ sich nicht bestätigen (Stufe {{ stufe }},
+                        {{ t }} °C). Bitte FordPass-App prüfen.
+                  - stop: "Start nicht bestätigt"
+
+      - action: notify.mobile_app_pixel_9a
+        data:
+          title: "Capri wird vorklimatisiert"
+          message: >-
+            Stufe {{ stufe }}: {{ t }} °C, Taupunktabstand {{ spread | round(1) }} K,
+            Temperatur {{ temp_option | replace('_0', ' °C') | replace('_5', ',5 °C') }}{{ ', Frontscheibe an' if stufe | int >= 2 else '' }}{{ ', Laufzeit wird verlängert' if stufe | int == 3 else '' }}.
+
+      - alias: "Stufe 3: Laufzeit einmal verlängern"
+        if:
+          - condition: template
+            value_template: "{{ stufe | int == 3 }}"
+        then:
+          - delay: "00:10:00"
+          - if:
+              - condition: template
+                value_template: >-
+                  {{ is_state('sensor.fordpass_wf0spbef1tsd01110_remotestartstatus', 'Active')
+                     and has_value('button.fordpass_wf0spbef1tsd01110_extendremotestart') }}
+            then:
+              - action: button.press
+                target:
+                  entity_id: button.fordpass_wf0spbef1tsd01110_extendremotestart
