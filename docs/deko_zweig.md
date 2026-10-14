@@ -23,7 +23,7 @@ Der Zweig ist nur per IR steuerbar und blinkt nach dem Einschalten. Darum sendet
 | 05:00 | an | Werktag, jemand zuhause |
 | 06:00 | an | Wochenende/Feiertag, jemand zuhause |
 | jemand kommt heim (`zone.home` von 0 auf ≥ 1) | an | nach der Einschaltzeit des Tages, Zweig laut Helper aus |
-| alle weg (`zone.home` = 0 seit 5 min) | aus | – |
+| alle weg (`zone.home` < 1 seit 5 min) | aus | – |
 | 00:00 | aus | – |
 
 Fehlt `binary_sensor.workday_sensor`, gilt Mo–Fr als Werktag (Feiertage dann wie Werktage).
