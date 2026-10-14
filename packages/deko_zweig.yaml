@@ -100,9 +100,9 @@ automation:
         entity_id: zone.home
         above: 0
         id: heimkommen
-      - trigger: state
+      - trigger: numeric_state
         entity_id: zone.home
-        to: "0"
+        below: 1
         for: "00:05:00"
         id: alle_weg
       - trigger: time
