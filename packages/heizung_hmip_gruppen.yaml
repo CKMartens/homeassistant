@@ -1,0 +1,74 @@
+# =============================================================================
+# Heizung Schlafzimmer + Büro – Heizplan Flex Plus auf OpenCCU-Heizungsgruppen
+# Stand: 2026-10-15, live in HA (Automationen per ha-mcp angepasst)
+#   automation.heizplan_schlafzimmer (id: 1791124313492)
+#   automation.heizplan_buro         (id: 1791125403140)
+#
+# Hardware je Raum: HmIP-WTH-2 + HmIP-eTRV-2 als Heizungsgruppe in der OpenCCU
+# (raspimatic01), in HA über Homematic(IP) Local mit Interface "VirtualDevices":
+#   climate.heizgruppe_schlafzimmer_int0000007
+#   climate.heizgruppe_buro_int0000006
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#      ACHTUNG: Die beiden Automationen existieren bereits in der UI (gleiche id).
+#      Als Package nur laden, wenn die UI-Versionen vorher gelöscht wurden.
+#   b) oder einzeln in die UI kopieren (Automations-Editor -> "In YAML bearbeiten")
+#
+# Fensterabsenkung, Boost und Entkalkung macht die Gruppe in der OpenCCU selbst
+# (Drehgriffkontakte sind Gruppenmitglieder). Deshalb in Flex Plus:
+# window_activ: false, descale_activ: false.
+# Benötigt Blueprint Heizplan Flex Plus >= v1.4-plus (eigenes set_hvac_mode).
+# Details: docs/heizung_hmip_gruppen.md
+# =============================================================================
+
+automation:
+  - id: "1791124313492"
+    alias: Heizplan Schlafzimmer
+    description: >-
+      Steuert die OpenCCU-Heizungsgruppe Schlafzimmer (HmIP-WTH-2 + HmIP-eTRV-2)
+      nach schedule.heizplan_schlafzimmer (Komfort/ECO) mit
+      Abwesenheitstemperatur, nur während der Heizsaison. Fensterabsenkung,
+      Boost und Entkalkung macht die Gruppe selbst.
+    use_blueprint:
+      path: CKMartens/heizplan_flex_plus.yaml
+      input:
+        heizsaison: input_boolean.heizperiode_aktiv
+        climate_entity:
+          - climate.heizgruppe_schlafzimmer_int0000007
+        schedule_entity: schedule.heizplan_schlafzimmer
+        comfort_temperature: 20
+        window_entity:
+          - binary_sensor.homeatic_ip_drehgriffkontakt_schlafzimmer_doppelfenster_drehgriff_schlafzimmer_doppelfenster_fensterzustand
+          - binary_sensor.homeatic_ip_drehgriff_fenster_schlafzimmer_drehgriff_schlafzimmer_enster_fensterzustand
+        home_zone_activ: true
+        home_zone: zone.home
+        away_temperature: 16
+        window_activ: false
+        descale_activ: false
+
+  - id: "1791125403140"
+    alias: Heizplan Büro
+    description: >-
+      Steuert die OpenCCU-Heizungsgruppe Büro (HmIP-WTH-2 + HmIP-eTRV-2) nach
+      schedule.heizplan_buro (Komfort/ECO) mit Abwesenheitstemperatur, nur
+      während der Heizsaison. Fensterabsenkung, Boost und Entkalkung macht die
+      Gruppe selbst.
+    use_blueprint:
+      path: CKMartens/heizplan_flex_plus.yaml
+      input:
+        heizsaison: input_boolean.heizperiode_aktiv
+        climate_entity:
+          - climate.heizgruppe_buro_int0000006
+        schedule_entity: schedule.heizplan_buro
+        comfort_temperature: 20
+        eco_temperature: 16
+        window_activ: false
+        window_entity:
+          - binary_sensor.homeatic_ip_drehgriff_buro_drehgriff_buro_fensterzustand
+        home_zone_activ: true
+        home_zone: zone.home
+        descale_activ: false
+        descale_weekday: sat
+        descale_time: "21:00:00"

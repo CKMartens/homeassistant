@@ -27,9 +27,15 @@ blueprint:
     Ventil einmal pro Woche zum gewählten Zeitpunkt kurz auf und wird danach
     wieder ausgeschaltet (hvac_mode off).
 
+    **Betriebsart:** Thermostate, die nicht auf "heat" stehen, werden vor dem
+    Setzen der Soll-Temperatur per eigenem set_hvac_mode auf "heat" geschaltet
+    (bei Homematic IP = Manu). Nötig, weil z. B. Homematic(IP) Local ein
+    hvac_mode innerhalb von set_temperature ignoriert und das Gerät sonst im
+    internen Wochenprogramm (Auto) bleibt.
+
     Basierend auf "Heizplan Flex" von SmartHome for Dummies.
 
-    ℹ️ Version: v1.3-plus
+    ℹ️ Version: v1.4-plus
   domain: automation
   author: Carsten (basierend auf SmartHome for Dummies)
   input:
@@ -217,6 +223,7 @@ trigger_variables:
   home_zone: !input home_zone
 
 variables:
+  climates: !input climate_entity
   schedule_entity: !input schedule_entity
   comfort_temp: !input comfort_temperature
   eco_temp: !input eco_temperature
@@ -301,12 +308,16 @@ actions:
           - condition: trigger
             id: descale
         sequence:
+          - action: climate.set_hvac_mode
+            target:
+              entity_id: !input climate_entity
+            data:
+              hvac_mode: heat
           - action: climate.set_temperature
             target:
               entity_id: !input climate_entity
             data:
               temperature: !input descale_temperature
-              hvac_mode: heat
           - delay:
               minutes: !input descale_duration
           - action: climate.set_hvac_mode
@@ -315,9 +326,19 @@ actions:
             data:
               hvac_mode: "off"
     default:
+      # Nur Thermostate umschalten, die nicht schon auf heat stehen (spart Funk/Duty Cycle)
+      - if:
+          - condition: template
+            value_template: "{{ climates | reject('is_state', 'heat') | list | count > 0 }}"
+        then:
+          - action: climate.set_hvac_mode
+            continue_on_error: true
+            target:
+              entity_id: "{{ climates | reject('is_state', 'heat') | list }}"
+            data:
+              hvac_mode: heat
       - action: climate.set_temperature
         target:
           entity_id: !input climate_entity
         data:
           temperature: "{{ target_temp | float }}"
-          hvac_mode: heat
