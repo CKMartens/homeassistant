@@ -18,7 +18,9 @@ Die Zuordnung Anzeigename → Echo steht in beiden Skripten unter `variables: ec
 - Bad → `media_player.echo_dot_bad`
 - Büro → `media_player.echo_dot_buro`
 
-Getestet am 2026-10-17: Echo Büro, Lautstärke 0.2, TuneIn-Start läuft fehlerfrei.
+Eingespielt am 2026-10-17 über ha-mcp in den UI-Speicher (Helper und Skripte, ohne Neustart). Das Package deshalb nicht zusätzlich nach `/config/packages/` legen, sonst gibt es doppelte IDs.
+
+Getestet am 2026-10-17: Echo Büro, Lautstärke 0.2, TuneIn-Start und Stopp laufen fehlerfrei.
 
 Ist ein Echo `unavailable` oder fehlt die Zuordnung, gibt es eine Benachrichtigung statt eines Fehlers.
 

@@ -1,7 +1,8 @@
 # =============================================================================
 # Radio BOB! auf den Echos – Sender und Gerät per Dashboard wählen
-# Stand: 2026-10-17, in HA eingespielt (UI-Speicher über ha-mcp, ohne Neustart);
-#   script.radio_bob_stopp noch offen
+# Stand: 2026-10-17, in HA eingespielt (UI-Speicher über ha-mcp, ohne Neustart).
+#   ACHTUNG: Die Datei daher NICHT zusätzlich nach /config/packages/ legen,
+#   sonst gibt es doppelte IDs mit den UI-Einträgen. Sie dient als Backup/Vorlage.
 #   input_select.radio_bob_sender
 #   input_select.radio_bob_echo
 #   input_number.radio_bob_lautstaerke
