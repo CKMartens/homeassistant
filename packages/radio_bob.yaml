@@ -1,0 +1,158 @@
+# =============================================================================
+# Radio BOB! auf den Echos – Sender und Gerät per Dashboard wählen
+# Stand: 2026-10-17, vorbereitet (noch NICHT in HA eingespielt)
+#   input_select.radio_bob_sender
+#   input_select.radio_bob_echo
+#   input_number.radio_bob_lautstaerke
+#   script.radio_bob_abspielen / script.radio_bob_stopp
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder die Blöcke einzeln in die UI kopieren
+#      (Helper anlegen, Skript-Editor -> "In YAML bearbeiten")
+#
+# Ablauf:
+#   Im Dashboard Sender, Echo und Lautstärke wählen -> "Abspielen"
+#   Das Skript setzt die Lautstärke und startet den Sender per TuneIn
+#   (Alexa Media Player, media_content_type TUNEIN).
+#   Die Senderliste muss exakt den TuneIn-Namen entsprechen
+#   ("RADIO BOB 70er Rock" heißt wirklich ohne Ausrufezeichen).
+#   Dashboard-Karte und Details: docs/radio_bob.md
+#
+# VOR DEM EINSPIELEN PRÜFEN: die entity_ids in "echos" (Skripte unten).
+#   media_player.echo_wohnzimmer ist bestätigt, echo_bad und echo_buro
+#   sind abgeleitet (Alexa Media Player macht aus "Büro" meist "buro").
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 1) Helper: Auswahl im Dashboard
+# -----------------------------------------------------------------------------
+input_select:
+  radio_bob_sender:
+    name: "Radio BOB Sender"
+    icon: mdi:radio
+    options:
+      - "RADIO BOB! - Livestream National"
+      - "RADIO BOB 70er Rock"
+      - "RADIO BOB! Alternative Rock"
+      - "RADIO BOB! 2000er Rock"
+      - "RADIO BOB! 80er Rock"
+      - "RADIO BOB! 90er Rock"
+      - "RADIO BOB! Christmas Rock"
+      - "RADIO BOB! - Folk Rock"
+      - "RADIO BOB! Fury in the Slaughterhouse"
+      - "RADIO BOB! Mittelalter Rock"
+
+  radio_bob_echo:
+    name: "Radio BOB Echo"
+    icon: mdi:speaker
+    options:
+      - "Wohnzimmer"
+      - "Bad"
+      - "Büro"
+
+input_number:
+  radio_bob_lautstaerke:
+    name: "Radio BOB Lautstärke"
+    icon: mdi:volume-high
+    min: 0.1
+    max: 1.0
+    step: 0.05
+    mode: slider
+
+# -----------------------------------------------------------------------------
+# 2) Skripte – für Dashboard-Buttons, Automationen oder Sprachbefehle
+# -----------------------------------------------------------------------------
+script:
+  radio_bob_abspielen:
+    alias: "Radio BOB – abspielen"
+    description: >-
+      Startet den gewählten Radio-BOB-Sender per TuneIn auf dem gewählten Echo.
+      Ohne Felder gelten die Dashboard-Helper, die Felder überschreiben sie
+      (z. B. aus einer Automation).
+    icon: mdi:play
+    mode: restart
+    fields:
+      sender:
+        name: Sender
+        description: TuneIn-Sendername, leer = input_select.radio_bob_sender
+        example: "RADIO BOB! 80er Rock"
+        selector:
+          text:
+      echo:
+        name: Echo
+        description: Wohnzimmer, Bad oder Büro, leer = input_select.radio_bob_echo
+        example: "Bad"
+        selector:
+          select:
+            options: ["Wohnzimmer", "Bad", "Büro"]
+      lautstaerke:
+        name: Lautstärke
+        description: 0.1–1.0, leer = input_number.radio_bob_lautstaerke
+        selector:
+          number:
+            min: 0.1
+            max: 1.0
+            step: 0.05
+    variables:
+      echos:
+        Wohnzimmer: media_player.echo_wohnzimmer
+        Bad: media_player.echo_bad
+        Büro: media_player.echo_buro
+      sender_name: "{{ sender if sender is defined and sender else states('input_select.radio_bob_sender') }}"
+      echo_name: "{{ echo if echo is defined and echo else states('input_select.radio_bob_echo') }}"
+      player: "{{ echos.get(echo_name, '') }}"
+      volume: >-
+        {{ (lautstaerke if lautstaerke is defined and lautstaerke
+            else states('input_number.radio_bob_lautstaerke')) | float(0.4) }}
+    sequence:
+      - if:
+          - condition: template
+            value_template: "{{ player == '' or states(player) in ['unavailable', 'unknown'] }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              title: "Radio BOB"
+              message: >-
+                Echo "{{ echo_name }}" ist nicht erreichbar
+                ({{ player if player else 'keine Zuordnung' }}).
+          - stop: "Echo nicht erreichbar"
+      - action: media_player.volume_set
+        target:
+          entity_id: "{{ player }}"
+        data:
+          volume_level: "{{ volume }}"
+      - action: media_player.play_media
+        target:
+          entity_id: "{{ player }}"
+        data:
+          media:
+            media_content_type: TUNEIN
+            media_content_id: "{{ sender_name }}"
+
+  radio_bob_stopp:
+    alias: "Radio BOB – stopp"
+    description: Hält die Wiedergabe auf dem gewählten Echo an.
+    icon: mdi:stop
+    mode: single
+    fields:
+      echo:
+        name: Echo
+        description: Wohnzimmer, Bad oder Büro, leer = input_select.radio_bob_echo
+        selector:
+          select:
+            options: ["Wohnzimmer", "Bad", "Büro"]
+    variables:
+      echos:
+        Wohnzimmer: media_player.echo_wohnzimmer
+        Bad: media_player.echo_bad
+        Büro: media_player.echo_buro
+      echo_name: "{{ echo if echo is defined and echo else states('input_select.radio_bob_echo') }}"
+      player: "{{ echos.get(echo_name, '') }}"
+    sequence:
+      - condition: template
+        value_template: "{{ player != '' and states(player) not in ['unavailable', 'unknown'] }}"
+      - action: media_player.media_pause
+        target:
+          entity_id: "{{ player }}"
