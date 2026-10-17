@@ -1,0 +1,126 @@
+# =============================================================================
+# System – Zigbee2MQTT-Wächter
+# Stand: 2026-10-17, vorbereitet (noch NICHT in HA eingespielt)
+#   automation.system_zigbee2mqtt_wachter (id: system_zigbee2mqtt_waechter)
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder den Automations-Block in die UI kopieren
+#      (Automations-Editor -> "In YAML bearbeiten", nur den Listeneintrag)
+#
+# Warum:
+#   Zigbee2MQTT stürzt nach einem HA-/Host-Neustart manchmal mehrfach direkt
+#   hintereinander mit Exit-Code 1 ab (z. B. 2026-10-17 13:44, Koordinator
+#   tcp://10.10.0.39:6638 bzw. Netzwerk noch nicht bereit). Der Supervisor-
+#   Watchdog versucht es nur ein paar Mal innerhalb von Sekunden und gibt dann
+#   auf -> Add-on bleibt aus, Zigbee-Lichter und -Sensoren gehen nicht.
+#
+# Ablauf:
+#   Auslöser: HA-Start (3 min warten), Bridge offline seit 3 min, alle 30 min
+#   Bridge online -> nichts tun
+#   Sonst bis zu 3x: hassio.app_restart, jeweils bis 3 min auf "online" warten,
+#   dazwischen 2 min Pause
+#   Erfolg -> Info aufs Pixel 9; kein Erfolg -> Warnung aufs Pixel 9 +
+#   Benachrichtigung in HA
+#   Details: docs/zigbee2mqtt_waechter.md
+# =============================================================================
+
+automation:
+  - id: system_zigbee2mqtt_waechter
+    alias: "System – Zigbee2MQTT-Wächter"
+    description: >-
+      Startet das Zigbee2MQTT-Add-on neu, wenn die Bridge nach einem HA-Neustart
+      oder später nicht online ist (der Supervisor-Watchdog gibt nach wenigen
+      schnellen Abstürzen auf), und meldet Erfolg oder Fehlschlag aufs Handy.
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: homeassistant
+        event: start
+        id: ha_start
+      - trigger: state
+        entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+        to:
+          - "off"
+          - "unavailable"
+          - "unknown"
+        for: "00:03:00"
+        id: bridge_offline
+      - trigger: time_pattern
+        minutes: "/30"
+        id: kontrolle
+    conditions: []
+    actions:
+      - if:
+          - condition: trigger
+            id: ha_start
+        then:
+          - alias: "Z2M nach dem Start Zeit geben"
+            delay: "00:03:00"
+      - alias: "Nur weiter, wenn die Bridge nicht online ist"
+        condition: not
+        conditions:
+          - condition: state
+            entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+            state: "on"
+      - alias: "Bis zu 3 Neustartversuche"
+        repeat:
+          sequence:
+            - action: hassio.app_restart
+              data:
+                app: 45df7312_zigbee2mqtt
+            - wait_for_trigger:
+                - trigger: state
+                  entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+                  to: "on"
+              timeout: "00:03:00"
+              continue_on_timeout: true
+            - if:
+                - condition: not
+                  conditions:
+                    - condition: state
+                      entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+                      state: "on"
+              then:
+                - delay: "00:02:00"
+          until:
+            - condition: or
+              conditions:
+                - condition: state
+                  entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+                  state: "on"
+                - condition: template
+                  value_template: "{{ repeat.index >= 3 }}"
+      - if:
+          - condition: state
+            entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
+            state: "on"
+        then:
+          - action: notify.mobile_app_pixel_9
+            data:
+              title: "Zigbee2MQTT neu gestartet"
+              message: >-
+                Zigbee2MQTT war nicht online und läuft nach dem Neustart
+                durch den Wächter wieder.
+          - action: persistent_notification.dismiss
+            data:
+              notification_id: zigbee2mqtt_waechter
+        else:
+          - action: notify.mobile_app_pixel_9
+            data:
+              title: "⚠️ Zigbee2MQTT läuft nicht"
+              message: >-
+                3 Neustarts ohne Erfolg. Koordinator 10.10.0.39 und das
+                Add-on-Log prüfen.
+              data:
+                priority: high
+                ttl: 0
+          - action: persistent_notification.create
+            data:
+              notification_id: zigbee2mqtt_waechter
+              title: "Zigbee2MQTT läuft nicht"
+              message: >-
+                Der Zigbee2MQTT-Wächter hat das Add-on 3x neu gestartet, die
+                Bridge ist trotzdem nicht online. Koordinator
+                (tcp://10.10.0.39:6638) und Add-on-Log prüfen.
