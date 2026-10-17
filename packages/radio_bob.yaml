@@ -1,6 +1,8 @@
 # =============================================================================
 # Radio BOB! auf den Echos – Sender und Gerät per Dashboard wählen
-# Stand: 2026-10-17, vorbereitet (noch NICHT in HA eingespielt)
+# Stand: 2026-10-17, in HA eingespielt (UI-Speicher über ha-mcp, ohne Neustart).
+#   ACHTUNG: Die Datei daher NICHT zusätzlich nach /config/packages/ legen,
+#   sonst gibt es doppelte IDs mit den UI-Einträgen. Sie dient als Backup/Vorlage.
 #   input_select.radio_bob_sender
 #   input_select.radio_bob_echo
 #   input_number.radio_bob_lautstaerke
@@ -20,9 +22,8 @@
 #   ("RADIO BOB 70er Rock" heißt wirklich ohne Ausrufezeichen).
 #   Dashboard-Karte und Details: docs/radio_bob.md
 #
-# VOR DEM EINSPIELEN PRÜFEN: die entity_ids in "echos" (Skripte unten).
-#   media_player.echo_wohnzimmer ist bestätigt, echo_bad und echo_buro
-#   sind abgeleitet (Alexa Media Player macht aus "Büro" meist "buro").
+# Echos (live geprüft 2026-10-17): media_player.echo_wohnzimmer,
+#   media_player.echo_dot_bad, media_player.echo_dot_buro
 # =============================================================================
 
 # -----------------------------------------------------------------------------
@@ -98,8 +99,8 @@ script:
     variables:
       echos:
         Wohnzimmer: media_player.echo_wohnzimmer
-        Bad: media_player.echo_bad
-        Büro: media_player.echo_buro
+        Bad: media_player.echo_dot_bad
+        Büro: media_player.echo_dot_buro
       sender_name: "{{ sender if sender is defined and sender else states('input_select.radio_bob_sender') }}"
       echo_name: "{{ echo if echo is defined and echo else states('input_select.radio_bob_echo') }}"
       player: "{{ echos.get(echo_name, '') }}"
@@ -146,8 +147,8 @@ script:
     variables:
       echos:
         Wohnzimmer: media_player.echo_wohnzimmer
-        Bad: media_player.echo_bad
-        Büro: media_player.echo_buro
+        Bad: media_player.echo_dot_bad
+        Büro: media_player.echo_dot_buro
       echo_name: "{{ echo if echo is defined and echo else states('input_select.radio_bob_echo') }}"
       player: "{{ echos.get(echo_name, '') }}"
     sequence:

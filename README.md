@@ -21,7 +21,7 @@ Konfiguration und Doku für Home Assistant „Casa Martens“: Blueprints, Autom
 | Capri Vorklimatisierung | [Package](packages/capri_vorklimatisierung.yaml) · [Doku](docs/capri_vorklimatisierung.md) | `automation.auto_capri_vorklimatisierung_diensttage` startet Elkes Ford Capri per FordPass an Diensttagen. Nutzt die MG-Nachtwerte. | live seit 2026-10-07 |
 | Mova Saugroboter | [Package](packages/mova_reinigung.yaml) · [Entitäten](docs/mova_entitaeten.md) | `automation.haushalt_mova_reinigung_bei_abwesenheit` + `script.haushalt_mova_reinigung_starten`: reinigt nach Kalender „Haushalt“, wenn alle weg sind, höchstens einmal pro Tag. | live seit 2026-10-07 |
 | LED Deko Zweig | [Package](packages/deko_zweig.yaml) · [Doku](docs/deko_zweig.md) | Zeitsteuerung per Broadlink-IR (An + Prog8), abhängig von Anwesenheit und Werktag. | vorbereitet, noch nicht eingespielt |
-| Radio BOB! auf den Echos | [Package](packages/radio_bob.yaml) · [Doku](docs/radio_bob.md) | `script.radio_bob_abspielen` / `script.radio_bob_stopp` starten bzw. pausieren den per `input_select` gewählten Radio-BOB-Sender (TuneIn) auf Echo Wohnzimmer, Bad oder Büro, mit Lautstärke-Regler. Dashboard-Karte in der Doku. | vorbereitet, noch nicht eingespielt |
+| Radio BOB! auf den Echos | [Package](packages/radio_bob.yaml) · [Doku](docs/radio_bob.md) | `script.radio_bob_abspielen` / `script.radio_bob_stopp` starten bzw. pausieren den per `input_select` gewählten Radio-BOB-Sender (TuneIn) auf Echo Wohnzimmer, Bad oder Büro, mit Lautstärke-Regler. Dashboard-Karte in der Doku. | live seit 2026-10-17 (UI-Speicher) |
 
 ## Pflege
 
