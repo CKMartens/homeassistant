@@ -1,6 +1,6 @@
 # =============================================================================
 # System – Zigbee2MQTT-Wächter
-# Stand: 2026-10-17, vorbereitet (noch NICHT in HA eingespielt)
+# Stand: 2026-10-17, live in HA (UI-Speicher, automations.yaml)
 #   automation.system_zigbee2mqtt_wachter (id: system_zigbee2mqtt_waechter)
 #
 # Nutzung:
@@ -70,10 +70,8 @@ automation:
             - action: hassio.app_restart
               data:
                 app: 45df7312_zigbee2mqtt
-            - wait_for_trigger:
-                - trigger: state
-                  entity_id: binary_sensor.zigbee2mqtt_bridge_connection_state
-                  to: "on"
+            - wait_template: >-
+                {{ is_state('binary_sensor.zigbee2mqtt_bridge_connection_state', 'on') }}
               timeout: "00:03:00"
               continue_on_timeout: true
             - if:
