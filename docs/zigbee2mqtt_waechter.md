@@ -1,6 +1,6 @@
 # System – Zigbee2MQTT-Wächter
 
-Stand 2026-10-17, vorbereitet, noch nicht in HA eingespielt.
+Stand 2026-10-17, live in HA (über die UI-API angelegt). Testlauf ohne Ausfall: bricht wie gewollt an der Bedingung „Bridge nicht online“ ab.
 YAML: [`packages/zigbee2mqtt_waechter.yaml`](../packages/zigbee2mqtt_waechter.yaml)
 
 ## Problem
