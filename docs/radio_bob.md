@@ -12,11 +12,13 @@ Sender und Echo im Dashboard auswählen, auf „Abspielen“ tippen, fertig. Pac
 | `script.radio_bob_abspielen` | setzt Lautstärke und startet den Sender (TuneIn) |
 | `script.radio_bob_stopp` | pausiert den gewählten Echo |
 
-Die Zuordnung Anzeigename → Echo steht in beiden Skripten unter `variables: echos:`. Vor dem Einspielen prüfen:
+Die Zuordnung Anzeigename → Echo steht in beiden Skripten unter `variables: echos:` (live geprüft am 2026-10-17):
 
-- `media_player.echo_wohnzimmer` (bestätigt)
-- `media_player.echo_bad` (abgeleitet)
-- `media_player.echo_buro` (abgeleitet)
+- Wohnzimmer → `media_player.echo_wohnzimmer`
+- Bad → `media_player.echo_dot_bad`
+- Büro → `media_player.echo_dot_buro`
+
+Getestet am 2026-10-17: Echo Büro, Lautstärke 0.2, TuneIn-Start läuft fehlerfrei.
 
 Ist ein Echo `unavailable` oder fehlt die Zuordnung, gibt es eine Benachrichtigung statt eines Fehlers.
 
