@@ -1,10 +1,11 @@
 # Auto-Stellplätze (Neonplan3D)
 
-Live seit 2026-10-18 als UI-Template-Helfer (Einstellungen → Helfer, „Auto Capri zuhause“ / „Auto MG zuhause“). Zwei Binärsensoren zeigen, ob Elkes Ford Capri bzw. der MG MGS5 EV zu Hause steht. Gedacht für die Stellplätze im Neonplan3D-Grundriss, ohne Sensoren an der Außenwand.
+Live seit 2026-10-18 als UI-Template-Helfer (Einstellungen → Helfer, „Auto Capri zuhause“ / „Auto MG zuhause“ / „Auto Capri eingesteckt“). Die Binärsensoren zeigen, ob Elkes Ford Capri bzw. der MG MGS5 EV zu Hause steht und ob der Capri am Kabel hängt. Gedacht für die Stellplätze im Neonplan3D-Grundriss, ohne Sensoren an der Außenwand.
 
 | Entität | an (`on`) wenn | Quellen |
 |---|---|---|
 | `binary_sensor.auto_capri_zuhause` | einer der Tracker `home` meldet | `device_tracker.fordpass_wf0spbef1tsd01110_tracker` (FordPass), `device_tracker.ford_capri_2025_extended_range_rwd_standort` (ABRP) |
+| `binary_sensor.auto_capri_eingesteckt` | `sensor.fordpass_wf0spbef1tsd01110_elvehplug` = `CONNECTED` (sonst `DISCONNECTED`), Device-Class `plug` | FordPass |
 | `binary_sensor.auto_mg_zuhause` | einer der Tracker `home` meldet | `device_tracker.mg_mgs5_ev_gps_location` (MG/iSMART), `device_tracker.mg_s5_2025_2025_standard_range_standort` (ABRP) |
 
 ## Logik

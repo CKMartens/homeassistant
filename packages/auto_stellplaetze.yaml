@@ -3,7 +3,7 @@
 # Stand: 2026-10-18, live in HA als UI-Template-Helfer (per ha-mcp, Backup 58624577 vorher)
 #   binary_sensor.auto_capri_zuhause
 #   binary_sensor.auto_mg_zuhause
-#   binary_sensor.auto_capri_eingesteckt (seit 2026-10-18)
+#   binary_sensor.auto_capri_eingesteckt (Backup 7993cbfa vorher)
 #
 # Nutzung:
 #   a) als Package: Datei nach /config/packages/ legen
