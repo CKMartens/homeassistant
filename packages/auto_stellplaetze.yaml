@@ -3,6 +3,7 @@
 # Stand: 2026-10-18, live in HA als UI-Template-Helfer (per ha-mcp, Backup 58624577 vorher)
 #   binary_sensor.auto_capri_zuhause
 #   binary_sensor.auto_mg_zuhause
+#   binary_sensor.auto_capri_eingesteckt (Backup 7993cbfa vorher)
 #
 # Nutzung:
 #   a) als Package: Datei nach /config/packages/ legen
@@ -48,3 +49,13 @@ template:
               'device_tracker.mg_s5_2025_2025_standard_range_standort']
              | map('states') | reject('in', ['unknown', 'unavailable'])
              | list | count > 0 }}
+
+      - name: "Auto Capri eingesteckt"
+        unique_id: auto_capri_eingesteckt
+        device_class: plug
+        icon: mdi:ev-plug-type2
+        state: >-
+          {{ is_state('sensor.fordpass_wf0spbef1tsd01110_elvehplug', 'CONNECTED') }}
+        availability: >-
+          {{ states('sensor.fordpass_wf0spbef1tsd01110_elvehplug')
+             not in ['unknown', 'unavailable'] }}
