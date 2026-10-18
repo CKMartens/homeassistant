@@ -1,6 +1,6 @@
 # Auto-Stellplätze (Neonplan3D)
 
-Zwei Binärsensoren zeigen, ob Elkes Ford Capri bzw. der MG MGS5 EV zu Hause steht. Gedacht für die Stellplätze im Neonplan3D-Grundriss, ohne Sensoren an der Außenwand.
+Live seit 2026-10-18 als UI-Template-Helfer (Einstellungen → Helfer, „Auto Capri zuhause“ / „Auto MG zuhause“). Zwei Binärsensoren zeigen, ob Elkes Ford Capri bzw. der MG MGS5 EV zu Hause steht. Gedacht für die Stellplätze im Neonplan3D-Grundriss, ohne Sensoren an der Außenwand.
 
 | Entität | an (`on`) wenn | Quellen |
 |---|---|---|
