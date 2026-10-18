@@ -1,0 +1,50 @@
+# =============================================================================
+# Auto-Stellplätze – "Auto ist zu Hause" für Neonplan3D
+# Stand: 2026-10-18, vorbereitet (noch nicht in HA eingespielt)
+#   binary_sensor.auto_capri_zuhause
+#   binary_sensor.auto_mg_zuhause
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder als UI-Helper: Einstellungen → Geräte & Dienste → Helfer →
+#      Template → Binärsensor, Zustandsvorlage aus "state" unten kopieren,
+#      Geräteklasse "Anwesenheit"
+#
+# Idee: keine externen Sensoren. Jedes Auto hat zwei GPS-Tracker (Hersteller-
+#   Integration + ABRP). Ist einer davon "home" (zone.home, Radius 200 m),
+#   steht das Auto zu Hause. Fällt eine Quelle aus, reicht die andere;
+#   sind beide unavailable/unknown, wird auch der Sensor unavailable,
+#   statt fälschlich "weg" zu melden.
+#   Details: docs/auto_stellplaetze.md
+# =============================================================================
+
+template:
+  - binary_sensor:
+      - name: "Auto Capri zuhause"
+        unique_id: auto_capri_zuhause
+        device_class: presence
+        icon: mdi:car-electric
+        state: >-
+          {{ ['device_tracker.fordpass_wf0spbef1tsd01110_tracker',
+              'device_tracker.ford_capri_2025_extended_range_rwd_standort']
+             | map('states') | select('eq', 'home') | list | count > 0 }}
+        availability: >-
+          {{ ['device_tracker.fordpass_wf0spbef1tsd01110_tracker',
+              'device_tracker.ford_capri_2025_extended_range_rwd_standort']
+             | map('states') | reject('in', ['unknown', 'unavailable'])
+             | list | count > 0 }}
+
+      - name: "Auto MG zuhause"
+        unique_id: auto_mg_zuhause
+        device_class: presence
+        icon: mdi:car-electric
+        state: >-
+          {{ ['device_tracker.mg_mgs5_ev_gps_location',
+              'device_tracker.mg_s5_2025_2025_standard_range_standort']
+             | map('states') | select('eq', 'home') | list | count > 0 }}
+        availability: >-
+          {{ ['device_tracker.mg_mgs5_ev_gps_location',
+              'device_tracker.mg_s5_2025_2025_standard_range_standort']
+             | map('states') | reject('in', ['unknown', 'unavailable'])
+             | list | count > 0 }}
