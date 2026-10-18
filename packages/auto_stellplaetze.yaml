@@ -1,6 +1,6 @@
 # =============================================================================
 # Auto-Stellplätze – "Auto ist zu Hause" für Neonplan3D
-# Stand: 2026-10-18, vorbereitet (noch nicht in HA eingespielt)
+# Stand: 2026-10-18, live in HA als UI-Template-Helfer (per ha-mcp, Backup 58624577 vorher)
 #   binary_sensor.auto_capri_zuhause
 #   binary_sensor.auto_mg_zuhause
 #
