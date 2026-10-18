@@ -23,6 +23,7 @@ Konfiguration und Doku für Home Assistant „Casa Martens“: Blueprints, Autom
 | LED Deko Zweig | [Package](packages/deko_zweig.yaml) · [Doku](docs/deko_zweig.md) | Zeitsteuerung per Broadlink-IR (An + Prog8), abhängig von Anwesenheit und Werktag. | vorbereitet, noch nicht eingespielt |
 | Radio BOB! auf den Echos | [Package](packages/radio_bob.yaml) · [Doku](docs/radio_bob.md) | `script.radio_bob_abspielen` / `script.radio_bob_stopp` starten bzw. pausieren den per `input_select` gewählten Radio-BOB-Sender (TuneIn) auf Echo Wohnzimmer, Bad oder Büro, mit Lautstärke-Regler. Dashboard-Karte in der Doku. | live seit 2026-10-17 (UI-Speicher) |
 | Zigbee2MQTT-Wächter | [Package](packages/zigbee2mqtt_waechter.yaml) · [Doku](docs/zigbee2mqtt_waechter.md) | `automation.system_zigbee2mqtt_wachter` prüft nach dem HA-Start, bei offline-Bridge und alle 30 min, ob Zigbee2MQTT läuft, startet das Add-on bis zu 3x mit Abstand neu und meldet Erfolg oder Fehlschlag aufs Pixel 9. | live seit 2026-10-17 |
+| Auto-Stellplätze | [Package](packages/auto_stellplaetze.yaml) · [Doku](docs/auto_stellplaetze.md) | `binary_sensor.auto_capri_zuhause` und `binary_sensor.auto_mg_zuhause` sind an, wenn der Ford Capri bzw. der MG laut GPS-Tracker (Hersteller + ABRP) in `zone.home` steht. Für die Stellplätze in Neonplan3D, ohne Außensensoren. | vorbereitet, noch nicht eingespielt |
 
 ## Pflege
 
