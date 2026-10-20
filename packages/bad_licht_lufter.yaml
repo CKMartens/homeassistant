@@ -1,9 +1,9 @@
 # =============================================================================
 # Bad – Licht und Lüfter über Präsenzmelder + Feuchte
-# Stand: 2026-10-20, vorbereitet (noch nicht in HA eingespielt)
-#   automation.bad_licht_praesenz   (Licht an/aus nach Anwesenheit)
-#   automation.bad_lufter_steuerung (Lüfter nach Anwesenheit und Luftfeuchte)
-#   input_number.bad_lufter_feuchte_ein / input_number.bad_lufter_feuchte_aus
+# Stand: 2026-10-20, live in HA (UI-Speicher, über ha-mcp angelegt)
+#   automation.bad_licht_nach_prasenz (id: bad_licht_praesenz)
+#   automation.bad_lufter_nach_prasenz_und_feuchte (id: bad_lufter_steuerung)
+#   input_number.bad_lufter_feuchte_ein (72 %) / input_number.bad_lufter_feuchte_aus (67 %)
 #
 # Nutzung:
 #   a) als Package: Datei nach /config/packages/ legen
@@ -28,7 +28,7 @@
 #           Feuchte <= Aus-Schwelle (Standard 67 %) und niemand im Bad -> aus
 #           Sicherheitsnetz: nach 45 min ohne Anwesenheit aus
 #   Wenn das Licht per Direktverknüpfung in der OpenCCU läuft:
-#   automation.bad_licht_praesenz deaktivieren. Details: docs/bad_licht_lufter.md
+#   automation.bad_licht_nach_prasenz deaktivieren. Details: docs/bad_licht_lufter.md
 # =============================================================================
 
 input_number:

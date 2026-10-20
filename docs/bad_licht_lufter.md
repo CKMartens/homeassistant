@@ -1,6 +1,12 @@
 # Bad – Licht und Lüfter über Präsenzmelder + Feuchte
 
-Stand 2026-10-20, vorbereitet, noch nicht in HA eingespielt.
+Stand 2026-10-20, live in HA (UI-Speicher, vorher Backup „vor Bad Licht/Lüfter 2026-10-20“).
+
+| Automation | entity_id | id |
+|---|---|---|
+| Bad – Licht nach Präsenz | `automation.bad_licht_nach_prasenz` | `bad_licht_praesenz` |
+| Bad – Lüfter nach Präsenz und Feuchte | `automation.bad_lufter_nach_prasenz_und_feuchte` | `bad_lufter_steuerung` |
+
 YAML: [`packages/bad_licht_lufter.yaml`](../packages/bad_licht_lufter.yaml)
 
 ## Geräte
@@ -27,7 +33,7 @@ Der tado-Wert `sensor.bad_luftfeuchtigkeit` sitzt im Heizkörperventil und liegt
 | Feuchte < Aus-Schwelle seit 2 min, niemand seit 10 min | – | aus |
 | 45 min niemand im Bad | – | aus (Sicherheitsnetz) |
 
-Schwellen als Regler: `input_number.bad_lufter_feuchte_ein` (Start 72 %) und `input_number.bad_lufter_feuchte_aus` (Start 67 %). Im Package haben die Helper keinen `initial`-Wert, damit Änderungen einen Neustart überleben. Nach dem ersten Anlegen also einmal auf 72 / 67 stellen.
+Schwellen als Regler: `input_number.bad_lufter_feuchte_ein` (Start 72 %) und `input_number.bad_lufter_feuchte_aus` (Start 67 %). Die Helper haben keinen `initial`-Wert, damit Änderungen am Regler einen Neustart überleben. Wer das Package neu einspielt, stellt sie einmal auf 72 / 67.
 
 Warum diese Werte (STHD, 2026-10-17 bis 2026-10-20): Grundfeuchte im Bad 60–66 %, abends bis 69 %, nach dem Duschen Spitzen von 72–78 %. Eine Ein-Schwelle von 70 % würde abends ohne Duschen auslösen. Liegt die Grundfeuchte länger über der Aus-Schwelle, beendet das 45-Minuten-Sicherheitsnetz den Lauf. Die Feuchte-Einschaltung kommt erst wieder, wenn die Feuchte erneut über die Ein-Schwelle steigt.
 
@@ -43,17 +49,21 @@ Vorteil: Das Licht geht auch, wenn HA oder das Netz hängt, und es schaltet funk
 6. **Helligkeit:** In den Kanalparametern des SPI (Einstellungen → Geräte → Präsenzmelder → Kanal 1) die Helligkeitsschwelle so setzen, dass immer geschaltet wird. Sonst schaltet der SPI tagsüber nicht, obwohl er Anwesenheit meldet.
 7. **Speichern** und dann am SPI die **Systemtaste kurz drücken**. Der SPI läuft auf Batterie und holt sich neue Konfigurationsdaten nur, wenn er wach ist. Solange unter **Servicemeldungen** „Konfigurationsdaten stehen zur Übertragung an“ steht, ist die Verknüpfung noch nicht im Gerät. Das ist der häufigste Grund, warum es „nicht geht“.
 8. Testen: Bad betreten, Licht muss sofort angehen; nach Verlassen etwa 1 min plus die Haltezeit des SPI bis aus.
-9. Läuft es: `automation.bad_licht_praesenz` in HA **deaktivieren** (nicht löschen).
+9. Läuft es: `automation.bad_licht_nach_prasenz` in HA **deaktivieren** (nicht löschen).
 
 Weitere Stolperfallen:
 - Die Tasten am BS2 sind ab Werk intern mit Kanal 4 und 8 verknüpft. Die bleiben, die neue Verknüpfung kommt dazu.
 - Duty Cycle: Direktverknüpfungen zählen kaum, aber Kanal 4 nicht zusätzlich aus HA im Sekundentakt schalten.
 - Sender und Empfänger müssen an derselben CCU hängen (beide raspimatic01, passt).
 
-## Alter Bewegungsmelder (HmIP-SMI55-2) raus
+## Aufgeräumt am 2026-10-20
 
-`binary_sensor.homematic_ip_bewegungsmelder_bad_bewegungsmelder_bad_bewegung` wird laut HA-Referenzsuche von keiner Automation, keinem Skript und keiner Szene benutzt, nur von einer Karte im „Test Dashboard“.
+- Alter Bewegungsmelder HmIP-SMI55-2 (00319F29922FDA): von Carsten in der OpenCCU gelöscht und auf Werkseinstellung gesetzt, in HA sauber verschwunden. Kommt eventuell in den Eingang oder den Abstellraum.
+- Alter Shelly 1 Bad (`switch.shelly1_500bf8`, durch den BS2 ersetzt): Integrationseintrag in HA gelöscht.
+- Dashboards: Im „Test Dashboard“ zeigt die Bad-Raumkarte jetzt Präsenz = SPI, Licht = Kanal 4, dazu Lüfter und Heizung; die Bad-Kachel „Deckenlicht“ zeigt Kanal 4; bei der Keller-Raumkarte ist der fälschlich eingetragene Bad-Shelly als Licht entfernt. Im „Dashboard“ (Ansicht Licht, Grundriss) schaltet das Bad-Symbol jetzt Kanal 4.
 
-1. OpenCCU → Einstellungen → Geräte → „Homematic IP Bewegungsmelder Bad“ (00319F29922FDA) → **Löschen** (ablernen). Soll er woanders hin, vorher „auf Werkseinstellungen zurücksetzen“ wählen.
+## Falls ein Homematic-Gerät abgelernt wird (Vorgehen)
+
+1. OpenCCU → Einstellungen → Geräte → Gerät → **Löschen** (ablernen). Soll er woanders hin, vorher „auf Werkseinstellungen zurücksetzen“ wählen.
 2. HA: Das Gerät verschwindet aus Homematic(IP) Local. Bleiben Entitäten hängen („unique ID already exists“), hilft nur ein HA-Neustart.
-3. Karte im Test Dashboard entfernen.
+3. Dashboard-Karten mit den alten Entitäten anpassen.
