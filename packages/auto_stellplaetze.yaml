@@ -12,11 +12,13 @@
 #      Template → Binärsensor, Zustandsvorlage aus "state" unten kopieren,
 #      Geräteklasse "Anwesenheit"
 #
-# Idee: keine externen Sensoren. Jedes Auto hat zwei GPS-Tracker (Hersteller-
-#   Integration + ABRP). Ist einer davon "home" (zone.home, Radius 200 m),
-#   steht das Auto zu Hause. Fällt eine Quelle aus, reicht die andere;
-#   sind beide unavailable/unknown, wird auch der Sensor unavailable,
-#   statt fälschlich "weg" zu melden.
+# Idee: keine externen Sensoren. Jedes Auto meldet seine GPS-Position über die
+#   Hersteller-Integration (FordPass bzw. MG iSMART). Steht der Tracker auf
+#   "home" (zone.home, Radius 200 m), steht das Auto zu Hause. Ist der Tracker
+#   unavailable/unknown, wird auch der Sensor unavailable, statt fälschlich
+#   "weg" zu melden.
+#   2026-10-20: ABRP-Tracker entfernt, die blieben immer auf "home" stehen
+#   (Capri stand in Kronach und galt als zu Hause). Backup 55af07ce vorher.
 #   Details: docs/auto_stellplaetze.md
 # =============================================================================
 
@@ -27,28 +29,18 @@ template:
         device_class: presence
         icon: mdi:car-electric
         state: >-
-          {{ ['device_tracker.fordpass_wf0spbef1tsd01110_tracker',
-              'device_tracker.ford_capri_2025_extended_range_rwd_standort']
-             | map('states') | select('eq', 'home') | list | count > 0 }}
+          {{ is_state('device_tracker.fordpass_wf0spbef1tsd01110_tracker', 'home') }}
         availability: >-
-          {{ ['device_tracker.fordpass_wf0spbef1tsd01110_tracker',
-              'device_tracker.ford_capri_2025_extended_range_rwd_standort']
-             | map('states') | reject('in', ['unknown', 'unavailable'])
-             | list | count > 0 }}
+          {{ states('device_tracker.fordpass_wf0spbef1tsd01110_tracker') not in ['unknown', 'unavailable'] }}
 
       - name: "Auto MG zuhause"
         unique_id: auto_mg_zuhause
         device_class: presence
         icon: mdi:car-electric
         state: >-
-          {{ ['device_tracker.mg_mgs5_ev_gps_location',
-              'device_tracker.mg_s5_2025_2025_standard_range_standort']
-             | map('states') | select('eq', 'home') | list | count > 0 }}
+          {{ is_state('device_tracker.mg_mgs5_ev_gps_location', 'home') }}
         availability: >-
-          {{ ['device_tracker.mg_mgs5_ev_gps_location',
-              'device_tracker.mg_s5_2025_2025_standard_range_standort']
-             | map('states') | reject('in', ['unknown', 'unavailable'])
-             | list | count > 0 }}
+          {{ states('device_tracker.mg_mgs5_ev_gps_location') not in ['unknown', 'unavailable'] }}
 
       - name: "Auto Capri eingesteckt"
         unique_id: auto_capri_eingesteckt
