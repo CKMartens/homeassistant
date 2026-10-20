@@ -1,0 +1,165 @@
+# =============================================================================
+# Bad – Licht und Lüfter über Präsenzmelder + Feuchte
+# Stand: 2026-10-20, vorbereitet (noch nicht in HA eingespielt)
+#   automation.bad_licht_praesenz   (Licht an/aus nach Anwesenheit)
+#   automation.bad_lufter_steuerung (Lüfter nach Anwesenheit und Luftfeuchte)
+#   input_number.bad_lufter_feuchte_ein / input_number.bad_lufter_feuchte_aus
+#
+# Nutzung:
+#   a) als Package: Datei nach /config/packages/ legen
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#   b) oder Helper in der UI anlegen und die Automations-Blöcke in die UI
+#      kopieren (Automations-Editor -> "In YAML bearbeiten", nur den Listeneintrag)
+#
+# Geräte (OpenCCU raspimatic01, Homematic(IP) Local):
+#   HmIP-SPI  "Badezimmer Präsenzmelder" (000C2409913F04)
+#     binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit (Kanal 1)
+#   HmIP-BS2  "Homematic IP Wandtaster 2fach Badezimmer" (003164098DFFBC)
+#     switch.homematic_ip_wandtaster_2fach_badezimmer_ch4 = Badezimmerlicht
+#     switch.homematic_ip_wandtaster_2fach_badezimmer_ch8 = Badezimmerlüfter
+#   HmIP-STHD "Homematic IP Temperatursensor Bad"
+#     sensor.homematic_ip_temperatursensor_bad_klima_bad_rel_luftfeuchte
+#
+# Ablauf:
+#   Licht:  Anwesenheit an -> Licht an; Anwesenheit 1 min aus -> Licht aus
+#   Lüfter: Anwesenheit an -> an; Anwesenheit 10 min aus -> aus, außer die
+#           Feuchte liegt noch über der Aus-Schwelle
+#           Feuchte >= Ein-Schwelle (Standard 72 %) -> an
+#           Feuchte <= Aus-Schwelle (Standard 67 %) und niemand im Bad -> aus
+#           Sicherheitsnetz: nach 45 min ohne Anwesenheit aus
+#   Wenn das Licht per Direktverknüpfung in der OpenCCU läuft:
+#   automation.bad_licht_praesenz deaktivieren. Details: docs/bad_licht_lufter.md
+# =============================================================================
+
+input_number:
+  bad_lufter_feuchte_ein:
+    name: "Bad Lüfter Feuchte ein"
+    icon: mdi:water-percent-alert
+    min: 55
+    max: 90
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+  bad_lufter_feuchte_aus:
+    name: "Bad Lüfter Feuchte aus"
+    icon: mdi:water-percent
+    min: 50
+    max: 85
+    step: 1
+    unit_of_measurement: "%"
+    mode: slider
+
+automation:
+  - id: bad_licht_praesenz
+    alias: "Bad – Licht nach Präsenz"
+    description: >-
+      Schaltet das Badezimmerlicht (HmIP-BS2 Kanal 4) ein, sobald der
+      Präsenzmelder Anwesenheit meldet, und eine Minute nach Ende der
+      Anwesenheit wieder aus. Deaktivieren, sobald die Direktverknüpfung in der
+      OpenCCU das übernimmt.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit
+        from: "off"
+        to: "on"
+        id: an
+      - trigger: state
+        entity_id: binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit
+        to: "off"
+        for: "00:01:00"
+        id: aus
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: an
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.homematic_ip_wandtaster_2fach_badezimmer_ch4
+          - conditions:
+              - condition: trigger
+                id: aus
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.homematic_ip_wandtaster_2fach_badezimmer_ch4
+
+  - id: bad_lufter_steuerung
+    alias: "Bad – Lüfter nach Präsenz und Feuchte"
+    description: >-
+      Lässt den Badlüfter (HmIP-BS2 Kanal 8) bei Anwesenheit laufen und bis
+      10 Minuten danach nachlaufen, schaltet ihn bei hoher Luftfeuchte
+      zusätzlich ein und erst wieder aus, wenn die Feuchte unter die
+      Aus-Schwelle gefallen ist, spätestens nach 45 Minuten ohne Anwesenheit.
+    mode: queued
+    max: 5
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit
+        from: "off"
+        to: "on"
+        id: praesenz_an
+      - trigger: state
+        entity_id: binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit
+        to: "off"
+        for: "00:10:00"
+        id: praesenz_aus
+      - trigger: numeric_state
+        entity_id: sensor.homematic_ip_temperatursensor_bad_klima_bad_rel_luftfeuchte
+        above: input_number.bad_lufter_feuchte_ein
+        id: feuchte_hoch
+      - trigger: numeric_state
+        entity_id: sensor.homematic_ip_temperatursensor_bad_klima_bad_rel_luftfeuchte
+        below: input_number.bad_lufter_feuchte_aus
+        for: "00:02:00"
+        id: feuchte_ok
+      - trigger: state
+        entity_id: binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit
+        to: "off"
+        for: "00:45:00"
+        id: maximal
+    actions:
+      - choose:
+          - alias: "Jemand im Bad oder Feuchte hoch -> Lüfter an"
+            conditions:
+              - condition: trigger
+                id:
+                  - praesenz_an
+                  - feuchte_hoch
+            sequence:
+              - action: switch.turn_on
+                target:
+                  entity_id: switch.homematic_ip_wandtaster_2fach_badezimmer_ch8
+          - alias: "10 min niemand da und Feuchte unter Aus-Schwelle -> aus"
+            conditions:
+              - condition: trigger
+                id: praesenz_aus
+              - condition: numeric_state
+                entity_id: sensor.homematic_ip_temperatursensor_bad_klima_bad_rel_luftfeuchte
+                below: input_number.bad_lufter_feuchte_aus
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.homematic_ip_wandtaster_2fach_badezimmer_ch8
+          - alias: "Feuchte wieder ok und seit 10 min niemand da -> aus"
+            conditions:
+              - condition: trigger
+                id: feuchte_ok
+              - condition: state
+                entity_id: binary_sensor.badezimmer_badezimmer_prasenzmelder_anwesenheit
+                state: "off"
+                for: "00:10:00"
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.homematic_ip_wandtaster_2fach_badezimmer_ch8
+          - alias: "Sicherheitsnetz: 45 min niemand da -> aus"
+            conditions:
+              - condition: trigger
+                id: maximal
+            sequence:
+              - action: switch.turn_off
+                target:
+                  entity_id: switch.homematic_ip_wandtaster_2fach_badezimmer_ch8
