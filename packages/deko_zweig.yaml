@@ -1,8 +1,10 @@
 # =============================================================================
 # Wohnbereich – LED Deko Zweig (Elke): Steckdose + Broadlink-IR
-# Stand: 2026-10-21, offline vorbereitet (Umbau auf Steckdose, noch NICHT in HA)
-#   automation.wohnbereich_deko_zweig_zeitsteuerung (id: wohnbereich_deko_zweig_zeitsteuerung)
-#   script.wohnbereich_deko_zweig_an / script.wohnbereich_deko_zweig_aus
+# Stand: 2026-10-21, live in HA als UI-Automation/-Skripte (Backup 58579320 vorher)
+#   In HA: automation.led_dekozweig_2 (UI-id 1791959249811, Alias wie unten),
+#   script.wohnbereich_deko_zweig_an / script.wohnbereich_deko_zweig_aus.
+#   Die alte automation.led_dekozweig (nur "An") ist deaktiviert.
+#   Die id unten gilt nur, falls das Package statt der UI-Version geladen wird.
 #
 # Nutzung:
 #   a) als Package: Datei nach /config/packages/ legen
