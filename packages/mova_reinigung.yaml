@@ -1,115 +1,116 @@
 # =============================================================================
-# Mova (in HA: MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt"
-# Stand: 2026-10-07, in HA eingespielt (Skript, Automation, Helper per UI/ha-mcp)
+# Karl (MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt" + Override
+# Stand: 2026-10-21, v2 live in HA (UI-Speicher, per ha-mcp eingespielt)
 #
-# Nutzung:
-#   a) als Package: Datei nach /config/packages/ legen
-#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
-#   b) oder die drei Blöcke einzeln in die UI kopieren
-#      (Helper anlegen, Skript- und Automations-Editor -> "In YAML bearbeiten")
+# Live:
+#   input_boolean.karl_automatik            Kalender-Automatik an/aus
+#   input_datetime.mova_letzte_auto_reinigung  "heute gereinigt" (setzt das Skript)
+#   script.haushalt_mova_reinigung_starten  Modus + Räume (leer = überall)
+#   automation.haushalt_karl_reinigung_bei_abwesenheit
+#       alle 10 min weg -> Ansage auf Echo Wohnzimmer/Schlafzimmer/Büro,
+#       5 min warten, starten, falls noch alle weg und heute nicht gereinigt
+#       (auch nicht per App, sensor.…_cleaning_history)
+#   automation.haushalt_mova_reinigung_bei_abwesenheit  (v1) DEAKTIVIERT, nicht gelöscht
 #
-# zone.home zählt person.carsten_martens (Pixel 9) und person.elke_martens (Pixel 9a).
+# Nicht als Package nach /config/packages legen (doppelte IDs).
+# Dashboard-Karten: docs/mova_entitaeten.md
 # =============================================================================
 
-# -----------------------------------------------------------------------------
-# 1) Helper: merkt sich, wann zuletzt automatisch gereinigt wurde
-#    -> sorgt für "höchstens einmal pro Tag"
-# -----------------------------------------------------------------------------
+input_boolean:
+  karl_automatik:
+    name: "Karl Automatik"
+    icon: mdi:robot-vacuum
+    initial: true   # nur beim Package; als UI-Helper einfach "an" anlegen
+
 input_datetime:
-  mova_letzte_auto_reinigung:
+  mova_letzte_auto_reinigung:      # aus v1, bleibt
     name: "Mova letzte Auto-Reinigung"
     has_date: true
     has_time: false
     icon: mdi:robot-vacuum
 
-# -----------------------------------------------------------------------------
-# 2) Skript: setzt den Reinigungsmodus und startet den Robi
-#    Separat, damit du es auch per Dashboard-Button oder manuell testen kannst.
-# -----------------------------------------------------------------------------
 script:
   haushalt_mova_reinigung_starten:
-    alias: "Haushalt – Mova Reinigung starten"
+    alias: "Karl – Reinigung starten"
     description: >-
-      Stellt am Mova Z60 Reinigungsart, Saugstärke und Wasserstufe passend zum
-      gewählten Modus ein und startet eine Komplettreinigung.
+      Stellt bei Karl Reinigungsart, Saugstärke, Route und Feuchte passend zum Modus
+      ein und reinigt die ganze Wohnung oder nur die gewählten Räume.
     icon: mdi:robot-vacuum
     mode: single
     fields:
       modus:
         name: Modus
-        description: "saugen | saugen_wischen | intensiv"
         required: true
         default: saugen
         selector:
           select:
             options:
-              - saugen
-              - saugen_wischen
-              - intensiv
+              - label: "Saugen"
+                value: saugen
+              - label: "Saugen & Wischen"
+                value: saugen_wischen
+              - label: "Intensiv saugen & wischen"
+                value: intensiv
+      raeume:
+        name: Räume
+        description: "Leer lassen = überall"
+        required: false
+        selector:
+          select:
+            multiple: true
+            options:
+              - label: Wohnzimmer
+                value: "1"
+              - label: Esszimmer
+                value: "4"
+              - label: Küche
+                value: "8"
+              - label: Flur
+                value: "5"
+              - label: Bad
+                value: "2"
+              - label: Schlafzimmer
+                value: "6"
+              - label: Arbeitszimmer
+                value: "7"
     variables:
-      # Echte entity_ids, per ha-mcp ausgelesen am 2026-10-07
-      # (MOVA Z60 Ultra Roller, Integration dreame_vacuum / HACS)
       robi: vacuum.z60_ultra_roller_standalone
-      ent_reinigungsart: select.z60_ultra_roller_standalone_cleaning_mode   # sweeping | mopping | sweeping_and_mopping | mopping_after_sweeping
-      ent_saugstaerke: select.z60_ultra_roller_standalone_suction_level     # quiet | standard | strong | turbo
-      ent_route: select.z60_ultra_roller_standalone_cleaning_route          # quick | standard | intensive | deep
-      ent_feuchte: number.z60_ultra_roller_standalone_wetness_level         # 1-32, nur verfügbar, wenn gewischt wird
+      ent_reinigungsart: select.z60_ultra_roller_standalone_cleaning_mode
+      ent_saugstaerke: select.z60_ultra_roller_standalone_suction_level
+      ent_route: select.z60_ultra_roller_standalone_cleaning_route
+      ent_feuchte: number.z60_ultra_roller_standalone_wetness_level
       ent_individuell: switch.z60_ultra_roller_standalone_customized_cleaning
-
       profile:
-        saugen:
-          reinigungsart: "sweeping"
-          saugstaerke: "standard"
-          route: "standard"
-          feuchte: null
-        saugen_wischen:
-          reinigungsart: "sweeping_and_mopping"
-          saugstaerke: "standard"
-          route: "standard"
-          feuchte: 16           # aktueller Wert aus der App
-        intensiv:
-          reinigungsart: "sweeping_and_mopping"
-          saugstaerke: "turbo"
-          route: "intensive"    # "deep" wäre noch gründlicher (und langsamer)
-          feuchte: 22
+        saugen:         {reinigungsart: "sweeping",             saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: null}
+        saugen_wischen: {reinigungsart: "sweeping_and_mopping", saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: 16}
+        intensiv:       {reinigungsart: "sweeping_and_mopping", saugstaerke: "turbo",    stufe: 3, route: "intensive", feuchte: 22}
       p: "{{ profile[modus] }}"
+      segmente: >-
+        {{ (raeume if raeume is defined and raeume else []) | map('int') | list }}
 
     sequence:
-      # Robi muss erreichbar sein und in der Station stehen
       - condition: template
         value_template: "{{ states(robi) in ['docked', 'idle'] }}"
-        alias: "Robi bereit (docked/idle)"
+        alias: "Karl bereit (docked/idle)"
 
-      # Individuelle Reinigung (Raum-Profile aus der App) würde die globalen
-      # Werte übersteuern -> sicherstellen, dass sie aus ist
       - if:
           - condition: template
             value_template: "{{ is_state(ent_individuell, 'on') }}"
         then:
           - action: switch.turn_off
-            target:
-              entity_id: "{{ ent_individuell }}"
+            target: {entity_id: "{{ ent_individuell }}"}
           - delay: "00:00:03"
 
       - action: select.select_option
-        target:
-          entity_id: "{{ ent_reinigungsart }}"
-        data:
-          option: "{{ p.reinigungsart }}"
-
+        target: {entity_id: "{{ ent_reinigungsart }}"}
+        data: {option: "{{ p.reinigungsart }}"}
       - action: select.select_option
-        target:
-          entity_id: "{{ ent_saugstaerke }}"
-        data:
-          option: "{{ p.saugstaerke }}"
-
+        target: {entity_id: "{{ ent_saugstaerke }}"}
+        data: {option: "{{ p.saugstaerke }}"}
       - action: select.select_option
-        target:
-          entity_id: "{{ ent_route }}"
-        data:
-          option: "{{ p.route }}"
+        target: {entity_id: "{{ ent_route }}"}
+        data: {option: "{{ p.route }}"}
 
-      # Feuchte-Regler wird erst nach dem Wechsel auf einen Wischmodus verfügbar
       - if:
           - condition: template
             value_template: "{{ p.feuchte is not none }}"
@@ -118,56 +119,68 @@ script:
             timeout: "00:00:30"
             continue_on_timeout: true
           - action: number.set_value
-            target:
-              entity_id: "{{ ent_feuchte }}"
-            data:
-              value: "{{ p.feuchte }}"
+            target: {entity_id: "{{ ent_feuchte }}"}
+            data: {value: "{{ p.feuchte }}"}
             continue_on_error: true
 
-      # kurz warten, bis der Robi die Einstellungen übernommen hat (Cloud-Latenz)
       - delay: "00:00:05"
 
-      - action: vacuum.start
-        target:
-          entity_id: "{{ robi }}"
+      # überall oder nur die gewählten Räume
+      - if:
+          - condition: template
+            value_template: "{{ segmente | count == 0 }}"
+        then:
+          - action: vacuum.start
+            target: {entity_id: "{{ robi }}"}
+        else:
+          - action: dreame_vacuum.vacuum_clean_segment
+            target: {entity_id: "{{ robi }}"}
+            data:
+              segments: "{{ segmente }}"
+              suction_level: "{{ p.stufe }}"   # 0 quiet … 3 turbo
+              repeats: 1
 
-# -----------------------------------------------------------------------------
-# 3) Automation: alle weg + Wochentag + Kalendereintrag heute -> Skript starten
-# -----------------------------------------------------------------------------
+      # merken, dass heute gereinigt wurde (egal ob Automatik oder Dashboard)
+      - action: input_datetime.set_datetime
+        target: {entity_id: input_datetime.mova_letzte_auto_reinigung}
+        data: {date: "{{ now().date() }}"}
+
 automation:
-  - id: haushalt_mova_reinigung_bei_abwesenheit
-    alias: "Haushalt – Mova Reinigung bei Abwesenheit"
+  - id: haushalt_karl_reinigung_bei_abwesenheit
+    alias: "Haushalt – Karl Reinigung bei Abwesenheit"
     description: >-
-      Startet an Wochentagen den Mova Z60, sobald niemand mehr zuhause ist, und
-      wählt den Modus anhand des heutigen Ganztagstermins im Kalender "Haushalt"
-      (saugen / saugen & wischen / Intensiv saugen & wischen), höchstens einmal pro Tag.
+      Wenn an Wochentagen alle weg sind, sagt Karl laut Kalender "Haushalt" über die
+      Echos an, was er vorhat, wartet 5 Minuten und startet dann, falls noch niemand
+      zurück ist und heute noch nicht gereinigt wurde (auch nicht per App).
     mode: single
-
     triggers:
-      # zone.home zählt die Personen zuhause -> 0 = alle weg
       - trigger: state
         entity_id: zone.home
         to: "0"
-        for: "00:10:00"   # 10 min Puffer, falls jemand nochmal zurückkommt
-
+        for: "00:10:00"
     conditions:
+      - condition: state
+        entity_id: input_boolean.karl_automatik
+        state: "on"
       - condition: time
         weekday: [mon, tue, wed, thu, fri]
         after: "07:00:00"
         before: "17:00:00"
-      # heute noch nicht automatisch gereinigt
-      - condition: template
-        value_template: >-
-          {{ states('input_datetime.mova_letzte_auto_reinigung') != now().date() | string }}
-      # Robi erreichbar und in der Station
       - condition: state
         entity_id: vacuum.z60_ultra_roller_standalone
         state: docked
+      - alias: "Heute noch nicht gereinigt (Automatik, Dashboard oder App)"
+        condition: template
+        value_template: >-
+          {% set h = states('sensor.z60_ultra_roller_standalone_cleaning_history') %}
+          {% set app_heute = h not in ['unknown', 'unavailable', 'none', '']
+                             and as_local(as_datetime(h)).date() == now().date() %}
+          {{ not app_heute
+             and states('input_datetime.mova_letzte_auto_reinigung') != now().date() | string }}
 
     actions:
       - action: calendar.get_events
-        target:
-          entity_id: calendar.haushalt
+        target: {entity_id: calendar.haushalt}
         data:
           start_date_time: "{{ today_at('00:00') }}"
           end_date_time: "{{ today_at('23:59') }}"
@@ -175,34 +188,70 @@ automation:
 
       - variables:
           titel: >-
-            {{ kalender['calendar.haushalt'].events
-               | map(attribute='summary')
+            {{ kalender['calendar.haushalt'].events | map(attribute='summary')
                | map('lower') | map('trim') | list }}
-          # Reihenfolge wichtig: der "stärkste" Eintrag gewinnt, falls mehrere drinstehen
           modus: >-
             {%- if 'intensiv saugen & wischen' in titel -%}intensiv
             {%- elif 'saugen & wischen' in titel -%}saugen_wischen
             {%- elif 'saugen' in titel -%}saugen
             {%- else -%}keiner{%- endif -%}
+          art:
+            saugen: "Das Saugen"
+            saugen_wischen: "Das Saugen und Wischen"
+            intensiv: "Die Intensivreinigung"
+          art_titel:
+            saugen: "Saugen"
+            saugen_wischen: "Saugen & Wischen"
+            intensiv: "Intensiv saugen & wischen"
+          echos:
+            media_player.echo_wohnzimmer: switch.echo_wohnzimmer_bitte_nicht_storen_2
+            media_player.echo_schlafzimmer: switch.echo_schlafzimmer_bitte_nicht_storen_2
+            media_player.echo_dot_buro: switch.echo_dot_buro_bitte_nicht_storen_2
+          ziele: >-
+            {% set ns = namespace(z=[]) %}
+            {% for mp, dnd in echos.items() if not is_state(dnd, 'on') and not is_state(mp, 'unavailable') %}
+            {% set ns.z = ns.z + [mp] %}
+            {% endfor %}
+            {{ ns.z }}
 
       - condition: template
         value_template: "{{ modus != 'keiner' }}"
         alias: "Heute steht eine Reinigung im Kalender"
 
+      # Ansage – bewusst auch, wenn laut HA niemand da ist; Echos mit "Bitte nicht stören" werden übersprungen
+      - if:
+          - condition: template
+            value_template: "{{ ziele | count > 0 }}"
+        then:
+          - action: notify.alexa_media
+            data:
+              target: "{{ ziele }}"
+              message: >-
+                Entschuldigung, dass ich störe. {{ art[modus] }}
+                startet in fünf Minuten.
+              data:
+                type: announce
+            continue_on_error: true
+
+      - delay: "00:05:00"
+
+      # wer in den 5 Minuten heimkommt, bremst Karl aus
+      - condition: state
+        entity_id: zone.home
+        state: "0"
+        alias: "Immer noch alle weg"
+      - condition: state
+        entity_id: vacuum.z60_ultra_roller_standalone
+        state: docked
+
       - action: script.haushalt_mova_reinigung_starten
         data:
           modus: "{{ modus }}"
 
-      - action: input_datetime.set_datetime
-        target:
-          entity_id: input_datetime.mova_letzte_auto_reinigung
-        data:
-          date: "{{ now().date() }}"
-
       - action: persistent_notification.create
         data:
           notification_id: mova_auto_reinigung
-          title: "Mova Z60 gestartet"
+          title: "Karl ist losgefahren"
           message: >-
-            Alle sind weg – Reinigung "{{ modus }}" laut Kalender Haushalt
+            Alle sind weg – „{{ art_titel[modus] }}“ laut Kalender Haushalt
             um {{ now().strftime('%H:%M') }} gestartet.
