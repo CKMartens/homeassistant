@@ -7,12 +7,12 @@ Umbau am 2026-10-21: Menüleiste wie im „Dashboard“ (DBuit sidebar-card + ki
 | Seite | Pfad | Inhalt |
 |---|---|---|
 | Home | `/test-dashboard/home` | NeonPlan-3D-Karte (Höhe 720), Badges Carsten/Elke |
-| Karl | `/test-dashboard/karl` | Saugroboter Karl (Mova Z60): Dreame-Karte, Wasser/Fehler, Start-Skript, Automatik-Schalter |
+| Karl | `/test-dashboard/karl` | Saugroboter Karl (Mova Z60): nur die Dreame-Karte (volle Breite), dazu Start-Skript und Automatik-Schalter. Die Mova-Kacheln (Wasser, Fehler, Steuerung) sind entfernt, weil die Karte sie schon enthält |
 | Balkonkraftwerk | `/test-dashboard/bkw` | Solakon ONE: Leistung, Akku, Prognose, Verläufe (mini-graph-card), Nulleinspeisung und Speicher |
-| Wetter | `/test-dashboard/wetter` | WS2350 groß, DWD-Vorhersage Itzgrund-Herreth (täglich/stündlich), NINA/Wetter/Pollen, Windrose, Windy-Regenradar (Untersiemau) |
+| Wetter | `/test-dashboard/wetter` | WS2350 groß, DWD-Vorhersage Itzgrund-Herreth (täglich/stündlich), NINA/Wetter/Pollen, Windrose (Ausgabe `kph`, `kmh` erzeugt einen Konfigurationsfehler), Windy-Regenradar (Untersiemau) |
 | Autos | `/test-dashboard/autos` | Zuhause/Ladekabel (`binary_sensor.auto_*`), Vehicle Status Cards MG und Capri, Fahrtenbuch Capri |
 | Sicherheit | `/test-dashboard/sicherheit` | Fenster/Türen/Kellertür/Hausalarm, Alarmo Haus und Keller, Kameras Terrasse und Flur |
-| Räume (alt) | `/test-dashboard/uebersicht` | bisherige Übersicht; Raum-, Aquarium-, Garten-Ansichten sind jetzt Unterseiten (`subview`) |
+| Räume (alt) | `/test-dashboard/uebersicht` | bisherige Übersicht; Raum-, Aquarium-, Garten-Ansichten sind jetzt Unterseiten (`subview`). **Nur im Test Dashboard, beim Livestellen raus.** |
 
 Die alten Ansichten `neonplan3d`, `robi`, `bkw`, `auto`, `cameras` sind in den neuen Seiten aufgegangen. Navigationslinks in den alten Ansichten zeigen auf die neuen Pfade.
 
@@ -35,4 +35,5 @@ Die alten Ansichten `neonplan3d`, `robi`, `bkw`, `auto`, `cameras` sind in den n
 
 - Änderung per ha-mcp `python_transform`: [dashboards/test_dashboard_umbau.py](../dashboards/test_dashboard_umbau.py).
 - Stand vorher gesichert als ha-mcp-Backup `dashboard.test-dashboard.20261021_071525.yaml` (Rückweg: `ha_manage_backup` scope `edits`, action `restore`).
+- Beim Livestellen: Menüpunkt und Ansicht „Räume (alt)“ weglassen.
 - Später geplant: Daten, Aquarium, Grill & Räuchern als weitere Menüpunkte.
