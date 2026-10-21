@@ -1,91 +1,68 @@
 # =============================================================================
-# Wohnbereich – LED Deko Zweig (Elke) per Broadlink-IR
-# Stand: 2026-10-14, offline vorbereitet (noch NICHT in HA eingespielt)
+# Wohnbereich – LED Deko Zweig (Elke): Steckdose + Broadlink-IR
+# Stand: 2026-10-21, offline vorbereitet (Umbau auf Steckdose, noch NICHT in HA)
 #   automation.wohnbereich_deko_zweig_zeitsteuerung (id: wohnbereich_deko_zweig_zeitsteuerung)
 #   script.wohnbereich_deko_zweig_an / script.wohnbereich_deko_zweig_aus
-#   input_boolean.wohnbereich_deko_zweig
 #
 # Nutzung:
 #   a) als Package: Datei nach /config/packages/ legen
 #      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
 #   b) oder die Blöcke einzeln in die UI kopieren
-#      (Helper anlegen, Skript-/Automations-Editor -> "In YAML bearbeiten")
+#      (Skript-/Automations-Editor -> "In YAML bearbeiten")
 #
 # Ablauf:
+#   Ein/Aus über switch.wohnbereich_steckdose_deko (Strom an = Zweig an)
+#   Steckdose geht an (egal wodurch) -> nach 3 s IR "Prog8" (sonst blinkt er)
 #   Werktag 05:00, Wochenende/Feiertag 06:00 -> an (nur wenn jemand zuhause ist)
-#   Alle weg (zone.home = 0 für 5 min) oder 00:00 -> aus
+#   Alle weg (zone.home < 1 für 5 min) oder 00:00 -> aus
 #   Heimkommen zwischen Einschaltzeit und 24:00 -> an
-#   "An" = IR "An", 3 s warten, IR "Prog8" (sonst blinkt der Zweig)
 #   Details: docs/deko_zweig.md
 #
 # Abhängigkeit: Workday-Integration (binary_sensor.workday_sensor, Land DE,
 #   Bundesland passend). Fehlt der Sensor, gilt Mo–Fr als Werktag (ohne Feiertage).
+#
+# Umbau 2026-10-21: input_boolean.wohnbereich_deko_zweig entfällt, der Zustand
+#   kommt jetzt von der Steckdose. Helper in HA löschen, falls per UI angelegt.
 # =============================================================================
 
 # -----------------------------------------------------------------------------
-# 1) Helper: Zustand merken (IR hat keine Rückmeldung)
-# -----------------------------------------------------------------------------
-input_boolean:
-  wohnbereich_deko_zweig:
-    name: "Deko Zweig an"
-    icon: mdi:pine-tree
-
-# -----------------------------------------------------------------------------
-# 2) Skripte – auch für Dashboard-Buttons nutzbar
+# 1) Skripte – auch für Dashboard-Buttons nutzbar
 # -----------------------------------------------------------------------------
 script:
   wohnbereich_deko_zweig_an:
     alias: "Wohnbereich – Deko Zweig an"
     description: >-
-      Schaltet den LED Deko Zweig per Broadlink-IR ein und stellt direkt
-      Programm 8 ein, damit er nicht blinkt.
+      Schaltet die Steckdose des LED Deko Zweigs ein; Prog8 sendet danach
+      die Zeitsteuerungs-Automation, sobald die Steckdose an ist.
     mode: single
     icon: mdi:pine-tree
     sequence:
-      - action: remote.send_command
+      - action: switch.turn_on
         target:
-          entity_id: remote.ir_remote_wohnbereich
-        data:
-          device: "LED Deko Zweig"
-          command: "An"
-      - delay:
-          seconds: 3
-      - action: remote.send_command
-        target:
-          entity_id: remote.ir_remote_wohnbereich
-        data:
-          device: "LED Deko Zweig"
-          command: "Prog8"
-      - action: input_boolean.turn_on
-        target:
-          entity_id: input_boolean.wohnbereich_deko_zweig
+          entity_id: switch.wohnbereich_steckdose_deko
 
   wohnbereich_deko_zweig_aus:
     alias: "Wohnbereich – Deko Zweig aus"
-    description: Schaltet den LED Deko Zweig per Broadlink-IR aus.
+    description: Schaltet die Steckdose des LED Deko Zweigs aus.
     mode: single
     icon: mdi:pine-tree-variant-outline
     sequence:
-      - action: remote.send_command
+      - action: switch.turn_off
         target:
-          entity_id: remote.ir_remote_wohnbereich
-        data:
-          device: "LED Deko Zweig"
-          command: "Aus"
-      - action: input_boolean.turn_off
-        target:
-          entity_id: input_boolean.wohnbereich_deko_zweig
+          entity_id: switch.wohnbereich_steckdose_deko
 
 # -----------------------------------------------------------------------------
-# 3) Automation
+# 2) Automation
 # -----------------------------------------------------------------------------
 automation:
   - id: wohnbereich_deko_zweig_zeitsteuerung
     alias: "Wohnbereich – Deko Zweig Zeitsteuerung"
     description: >-
-      Schaltet Elkes LED Deko Zweig werktags um 05:00 und am Wochenende bzw.
-      an Feiertagen um 06:00 ein, beim Heimkommen bis Mitternacht wieder ein,
-      und aus, sobald alle weg sind oder spätestens um 24:00.
+      Schaltet Elkes LED Deko Zweig über seine Steckdose werktags um 05:00 und
+      am Wochenende bzw. an Feiertagen um 06:00 ein, beim Heimkommen bis
+      Mitternacht wieder ein, und aus, sobald alle weg sind oder spätestens um
+      24:00; nach jedem Einschalten der Steckdose kommt per IR Prog8, damit er
+      nicht blinkt.
     mode: queued
     max: 3
 
@@ -108,6 +85,11 @@ automation:
       - trigger: time
         at: "00:00:00"
         id: mitternacht
+      - trigger: state
+        entity_id: switch.wohnbereich_steckdose_deko
+        to: "on"
+        for: "00:00:03"
+        id: steckdose_an
 
     variables:
       werktag: >-
@@ -131,12 +113,12 @@ automation:
             sequence:
               - action: script.wohnbereich_deko_zweig_an
 
-          - alias: "Heimkommen: an, wenn nach Einschaltzeit und noch aus"
+          - alias: "Heimkommen: an, wenn nach Einschaltzeit und Steckdose aus"
             conditions:
               - condition: trigger
                 id: heimkommen
               - condition: state
-                entity_id: input_boolean.wohnbereich_deko_zweig
+                entity_id: switch.wohnbereich_steckdose_deko
                 state: "off"
               - condition: template
                 value_template: "{{ now().strftime('%H:%M') >= einschaltzeit }}"
@@ -150,6 +132,16 @@ automation:
                   - alle_weg
                   - mitternacht
             sequence:
-              # Bewusst ohne Zustandsprüfung: falls der Zweig per Fernbedienung
-              # angemacht wurde, geht er trotzdem aus.
               - action: script.wohnbereich_deko_zweig_aus
+
+          - alias: "Steckdose ist an (egal wodurch): Prog8 senden"
+            conditions:
+              - condition: trigger
+                id: steckdose_an
+            sequence:
+              - action: remote.send_command
+                target:
+                  entity_id: remote.ir_remote_wohnbereich
+                data:
+                  device: "LED Deko Zweig"
+                  command: "Prog8"
