@@ -37,3 +37,11 @@ Die alten Ansichten `neonplan3d`, `robi`, `bkw`, `auto`, `cameras` sind in den n
 - Stand vorher gesichert als ha-mcp-Backup `dashboard.test-dashboard.20261021_071525.yaml` (Rückweg: `ha_manage_backup` scope `edits`, action `restore`).
 - Beim Livestellen: Menüpunkt und Ansicht „Räume (alt)“ weglassen.
 - Später geplant: Daten, Aquarium, Grill & Räuchern als weitere Menüpunkte.
+
+## Live seit 2026-10-21
+
+Das „Dashboard“ (`dashboard-dashboard`) hat seit 2026-10-21 den Inhalt des Test Dashboards: Seiten Home, Karl, Balkonkraftwerk, Wetter, Autos, Sicherheit unter `/dashboard-dashboard/...`, ohne „Räume (alt)“ und ohne die Raum-Unterseiten. Stand: [dashboards/dashboard_live.json](../dashboards/dashboard_live.json).
+
+- Weggefallen sind die alten Seiten Licht, Heizung, Kalender, Warnungen, Daten, Aquarium, Grill, BKW, Auto und Bundesliga. Sie stecken im ha-mcp-Backup `dashboard.dashboard-dashboard.20261021_092130.yaml` (Rückweg: `ha_manage_backup` scope `edits`, action `restore`).
+- Das Test Dashboard bleibt als Spielwiese mit „Räume (alt)“ bestehen. Änderungen dort werden nicht automatisch übernommen.
+

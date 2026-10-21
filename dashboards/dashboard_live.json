@@ -1,0 +1,1610 @@
+{
+  "views": [
+    {
+      "type": "sections",
+      "title": "Home",
+      "path": "home",
+      "icon": "mdi:home",
+      "theme": "Neonplan3D",
+      "max_columns": 4,
+      "dense_section_placement": true,
+      "badges": [
+        {
+          "type": "custom:mushroom-template-badge",
+          "entity": "person.carsten_martens",
+          "icon": "mdi:face-man-outline",
+          "content": "Carsten",
+          "color": "{{ 'cyan' if is_state(entity, 'home') else 'grey' }}"
+        },
+        {
+          "type": "custom:mushroom-template-badge",
+          "entity": "person.elke_martens",
+          "icon": "mdi:face-woman-outline",
+          "content": "Elke",
+          "color": "{{ 'cyan' if is_state(entity, 'home') else 'grey' }}"
+        }
+      ],
+      "sections": [
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "custom:neonplan3d-card",
+              "controls_hide_after": 30,
+              "floor_thumbs": false,
+              "fullscreen_button": true,
+              "alert_jump": true,
+              "weather_entity": "weather.forecast_home",
+              "idle_return": 60,
+              "night": "sun",
+              "idle_orbit": true,
+              "height": 720,
+              "pets": false,
+              "room_names": false,
+              "explode": false,
+              "roof": false,
+              "roof_fade": false,
+              "voice": true,
+              "grid_options": {
+                "columns": "full",
+                "rows": "auto"
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sections",
+      "title": "Karl",
+      "path": "karl",
+      "icon": "mdi:robot-vacuum",
+      "theme": "Neonplan3D",
+      "max_columns": 4,
+      "dense_section_placement": true,
+      "badges": [],
+      "sections": [
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🧹 Karl (Mova Z60)",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:dreame-vacuum-card",
+              "entity": "vacuum.z60_ultra_roller_standalone",
+              "color_scheme": "dreame_dark",
+              "icon_set": "material",
+              "hidden_card_objects": [
+                "action_buttons",
+                "controls",
+                "menu",
+                "shortcuts"
+              ],
+              "map_config": {
+                "map_1": {
+                  "rotation": "90",
+                  "scale": 1.5
+                }
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "script.haushalt_mova_reinigung_starten",
+              "name": "Karl starten",
+              "icon": "mdi:robot-vacuum",
+              "tap_action": {
+                "action": "more-info"
+              }
+            },
+            {
+              "type": "tile",
+              "entity": "input_boolean.karl_automatik",
+              "name": "Karl Automatik",
+              "icon": "mdi:robot-vacuum"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sections",
+      "title": "Balkonkraftwerk",
+      "path": "bkw",
+      "icon": "mdi:solar-panel",
+      "theme": "Neonplan3D",
+      "max_columns": 4,
+      "dense_section_placement": true,
+      "badges": [],
+      "sections": [
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "☀️ Jetzt",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "sensor.solakon_one_pv_leistung",
+              "icon": "mdi:solar-power-variant",
+              "custom_fields": {
+                "title": "PV-Leistung",
+                "text": "[[[ const s = states['sensor.solakon_one_pv_leistung']; return (s && !['unavailable','unknown'].includes(s.state)) ? s.state + ' W' : '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "#ffb547"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 8,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "sensor.solakon_one_leistung",
+              "icon": "mdi:transmission-tower-export",
+              "custom_fields": {
+                "title": "Ausgang",
+                "text": "[[[ const s = states['sensor.solakon_one_leistung']; return (s && !['unavailable','unknown'].includes(s.state)) ? s.state + ' W' : '-'; ]]]"
+              },
+              "styles": {},
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 8,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "sensor.solakon_one_batterie_ladestand",
+              "icon": "mdi:battery-high",
+              "custom_fields": {
+                "title": "Akku",
+                "text": "[[[ const s = states['sensor.solakon_one_batterie_ladestand']; return (s && !['unavailable','unknown'].includes(s.state)) ? s.state + ' %' : '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ const l = parseFloat(states['sensor.solakon_one_batterie_ladestand']?.state); return isNaN(l) ? '#a9b8d4' : (l > 50 ? '#4dff80' : (l > 20 ? '#ffcc40' : '#ff4d40')); ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 8,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "sensor.energy_production_today",
+              "icon": "mdi:chart-bell-curve",
+              "custom_fields": {
+                "title": "Prognose heute",
+                "text": "[[[ const s = states['sensor.energy_production_today']; return (s && !['unavailable','unknown'].includes(s.state)) ? s.state + ' kWh' : '-'; ]]]"
+              },
+              "styles": {},
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 8,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "sensor.energy_production_today_remaining",
+              "icon": "mdi:timer-sand",
+              "custom_fields": {
+                "title": "Rest heute",
+                "text": "[[[ const s = states['sensor.energy_production_today_remaining']; return (s && !['unavailable','unknown'].includes(s.state)) ? s.state + ' kWh' : '-'; ]]]"
+              },
+              "styles": {},
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 8,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "sensor.energy_production_tomorrow",
+              "icon": "mdi:weather-sunny",
+              "custom_fields": {
+                "title": "Prognose morgen",
+                "text": "[[[ const s = states['sensor.energy_production_tomorrow']; return (s && !['unavailable','unknown'].includes(s.state)) ? s.state + ' kWh' : '-'; ]]]"
+              },
+              "styles": {},
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 8,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "📈 Verlauf",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:mini-graph-card",
+              "name": "Leistung 24 h",
+              "entities": [
+                {
+                  "entity": "sensor.solakon_one_pv_leistung",
+                  "name": "PV",
+                  "color": "#ffb547"
+                },
+                {
+                  "entity": "sensor.solakon_one_leistung",
+                  "name": "Ausgang",
+                  "color": "#37e0ff"
+                }
+              ],
+              "hours_to_show": 24,
+              "points_per_hour": 4,
+              "line_width": 3,
+              "height": 140,
+              "animate": true,
+              "show": {
+                "fill": "fade",
+                "legend": true,
+                "icon": false
+              },
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:mini-graph-card",
+              "name": "Akku 24 h",
+              "entities": [
+                {
+                  "entity": "sensor.solakon_one_batterie_ladestand",
+                  "name": "Akku",
+                  "color": "#4dff80"
+                }
+              ],
+              "hours_to_show": 24,
+              "points_per_hour": 4,
+              "line_width": 3,
+              "height": 140,
+              "animate": true,
+              "show": {
+                "fill": "fade",
+                "legend": true,
+                "icon": false
+              },
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:mini-graph-card",
+              "name": "Strings 24 h",
+              "entities": [
+                {
+                  "entity": "sensor.solakon_one_string_1_leistung",
+                  "name": "String 1",
+                  "color": "#37e0ff"
+                },
+                {
+                  "entity": "sensor.solakon_one_string_2_leistung",
+                  "name": "String 2",
+                  "color": "#ff5fd2"
+                },
+                {
+                  "entity": "sensor.solakon_one_string_3_leistung",
+                  "name": "String 3",
+                  "color": "#ffb547"
+                },
+                {
+                  "entity": "sensor.solakon_one_string_4_leistung",
+                  "name": "String 4",
+                  "color": "#4dff80"
+                }
+              ],
+              "hours_to_show": 24,
+              "points_per_hour": 4,
+              "line_width": 3,
+              "height": 140,
+              "animate": true,
+              "show": {
+                "fill": "fade",
+                "legend": true,
+                "icon": false
+              },
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 48,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "⚙️ Nulleinspeisung und Speicher",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "entities",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "entities": [
+                "input_boolean.solarkon_einspeisung",
+                "input_boolean.solakon_ac_laden_aktiv",
+                "input_number.solakon_einspeisewert",
+                "input_number.solakon_pv_mindeswert",
+                "input_number.solakon_mindesteinspeisung",
+                "input_number.solakon_akku_uberlaufschwelle"
+              ]
+            },
+            {
+              "type": "entities",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "entities": [
+                "input_number.maximalwert_speicher",
+                "input_number.mindestwert_speicher",
+                "input_number.maximale_einspeisung",
+                "sensor.solakon_one_wechselrichter_temperatur",
+                "sensor.solakon_one_batterie_max_temperatur",
+                "sensor.solakon_one_batterie_min_temperatur",
+                "sensor.solakon_one_batterie_gesundheitszustand"
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Zählerstände",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 48,
+                "rows": "auto"
+              },
+              "entities": [
+                "sensor.solakon_one_pv_energie",
+                "sensor.solakon_one_netz_exportenergie",
+                "sensor.solakon_one_netz_importenergie"
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sections",
+      "title": "Wetter",
+      "path": "wetter",
+      "icon": "mdi:weather-partly-cloudy",
+      "theme": "Neonplan3D",
+      "max_columns": 4,
+      "dense_section_placement": true,
+      "badges": [],
+      "sections": [
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "custom:button-card",
+              "template": "neon_weather",
+              "entity": "sensor.ws2350_v2_38_outdoor_temperature",
+              "icon": "mdi:weather-partly-cloudy",
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "custom_fields": {
+                "trend": "[[[ return states['sensor.openweathermap_wetter']?.state || '-'; ]]]",
+                "temp": "[[[ return `${states['sensor.ws2350_v2_38_outdoor_temperature']?.state || '-'}°C`; ]]]",
+                "details": "[[[ const h = states['sensor.ws2350_v2_38_humidity']?.state || '-'; const w = states['sensor.windgeschwindigkeit_10min_durchschnitt']?.state || '-'; const uv = states['sensor.ws2350_v2_38_uv_index']?.state || '-'; return `${h}% Luftfeuchte<br>${w} km/h Wind<br>UV ${uv}`; ]]]"
+              }
+            },
+            {
+              "type": "weather-forecast",
+              "entity": "weather.itzgrund_herreth",
+              "show_current": true,
+              "show_forecast": true,
+              "forecast_type": "daily",
+              "round_temperature": true,
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "weather-forecast",
+              "entity": "weather.itzgrund_herreth",
+              "show_current": false,
+              "show_forecast": true,
+              "forecast_type": "hourly",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 48,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "⚠️ Warnungen",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.statusseite_nina_warnung_aktiv",
+              "icon": "mdi:alert",
+              "custom_fields": {
+                "title": "NINA",
+                "text": "[[[ return states['sensor.statusseite_nina_warnungen_text']?.state || '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.dashboard_alarm_detail_show_nina"
+              },
+              "grid_options": {
+                "columns": 16,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.statusseite_wetterwarnung_aktiv",
+              "icon": "mdi:weather-lightning-rainy",
+              "custom_fields": {
+                "title": "Wetter",
+                "text": "[[[ return states['sensor.statusseite_wetterwarnung_text']?.state || '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.dashboard_alarm_detail_show_wetter"
+              },
+              "grid_options": {
+                "columns": 16,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.statusseite_pollenwarnung_aktiv",
+              "icon": "mdi:flower-pollen",
+              "custom_fields": {
+                "title": "Pollenflug",
+                "text": "[[[ return states['sensor.statusseite_pollenwarnung_text']?.state || '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "perform-action",
+                "perform_action": "script.dashboard_alarm_detail_show_pollen"
+              },
+              "grid_options": {
+                "columns": 16,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🌬️ Wind und Radar",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:windrose-card",
+              "title": "Windrichtung",
+              "data_period": {
+                "period_back": "-12h"
+              },
+              "refresh_interval": 300,
+              "windspeed_bar_location": "right",
+              "wind_direction_entity": {
+                "entity": "sensor.windrichtung_10min_durchschnitt",
+                "use_statistics": false
+              },
+              "windspeed_entities": [
+                {
+                  "entity": "sensor.windgeschwindigkeit_10min_durchschnitt",
+                  "name": "Wind",
+                  "speed_unit": "auto",
+                  "output_speed_unit": "kph",
+                  "speed_range_beaufort": true,
+                  "use_statistics": false
+                }
+              ],
+              "direction_labels": {
+                "cardinal_direction_letters": "NESW"
+              },
+              "current_direction": {
+                "show_arrow": true
+              },
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "iframe",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=rain&product=ecmwf&level=surface&lat=50.195&lon=10.970&detailLat=50.195&detailLon=10.970&marker=true&message=true",
+              "aspect_ratio": "100%",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": 8
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sections",
+      "title": "Autos",
+      "path": "autos",
+      "icon": "mdi:car-electric",
+      "theme": "Neonplan3D",
+      "max_columns": 4,
+      "dense_section_placement": true,
+      "badges": [],
+      "sections": [
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🚗 Status",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.auto_mg_zuhause",
+              "icon": "mdi:car-electric",
+              "custom_fields": {
+                "title": "MG MGS5",
+                "text": "[[[ const z = states['binary_sensor.auto_mg_zuhause']?.state === 'on' ? 'Zuhause' : 'Unterwegs'; const s = states['sensor.mg_mgs5_ev_state_of_charge']?.state; return `${z} · ${s && !isNaN(parseFloat(s)) ? Math.round(parseFloat(s)) + ' %' : '-'}`; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#4dff80' : '#a9b8d4'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 16,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.auto_capri_zuhause",
+              "icon": "mdi:car-electric-outline",
+              "custom_fields": {
+                "title": "Ford Capri",
+                "text": "[[[ const z = states['binary_sensor.auto_capri_zuhause']?.state === 'on' ? 'Zuhause' : 'Unterwegs'; const s = states['sensor.fordpass_wf0spbef1tsd01110_soc']?.state; return `${z} · ${s && !isNaN(parseFloat(s)) ? Math.round(parseFloat(s)) + ' %' : '-'}`; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#4dff80' : '#a9b8d4'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 16,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.auto_capri_eingesteckt",
+              "icon": "mdi:ev-plug-type2",
+              "custom_fields": {
+                "title": "Capri Ladekabel",
+                "text": "[[[ return entity.state === 'on' ? 'Eingesteckt' : 'Nicht eingesteckt'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#37e0ff' : '#a9b8d4'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 16,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🔋 Fahrzeuge",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:vehicle-status-card",
+              "name": "Vehicle Status Card",
+              "layout_config": {
+                "button_grid": {
+                  "rows": 2,
+                  "columns": 2,
+                  "swipe": true
+                },
+                "images_swipe": {
+                  "height": 150
+                },
+                "section_order": [
+                  "indicators",
+                  "images",
+                  "range_info",
+                  "mini_map",
+                  "buttons"
+                ],
+                "hide_card_name": true,
+                "range_info_config": {
+                  "layout": "row"
+                },
+                "single_tire_card": {
+                  "tire_card": {
+                    "front_left": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_front_left"
+                    },
+                    "front_right": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_front_right"
+                    },
+                    "rear_left": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_rear_left"
+                    },
+                    "rear_right": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_rear_right"
+                    }
+                  },
+                  "enabled": false
+                }
+              },
+              "mini_map": {
+                "device_tracker": "device_tracker.mg_mgs5_ev_gps_location",
+                "enable_popup": true,
+                "map_zoom": 16,
+                "hide_map_address": true,
+                "use_zone_name": false,
+                "user_location": false
+              },
+              "indicator_rows": [
+                {
+                  "row_items": []
+                }
+              ],
+              "range_info": [
+                {
+                  "energy_level": {
+                    "entity": "sensor.mg_mgs5_ev_state_of_charge",
+                    "value_alignment": "start",
+                    "value_position": "inside",
+                    "max_value": 100,
+                    "icon_state_color": true,
+                    "hide_icon": false
+                  },
+                  "range_level": {
+                    "entity": "sensor.mg_mgs5_ev_mileage",
+                    "value_position": "outside"
+                  },
+                  "progress_color": "#37e0ff",
+                  "color_blocks": false,
+                  "color_thresholds": [],
+                  "charging_template": "{{ states('sensor.mg_mgs5_ev_charging_status') | lower is search('^charging') }}",
+                  "charging_entity": "sensor.mg_mgs5_ev_charging_status",
+                  "charge_target_entity": "sensor.mg_mgs5_ev_target_soc",
+                  "charge_target_tooltip": true
+                }
+              ],
+              "images": [
+                {
+                  "image": "/api/image/serve/a266a6964ebef15efe9a0a0051b6ee81/original"
+                }
+              ],
+              "button_cards": [
+                {
+                  "entity": "climate.mg_mgs5_ev_climate",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                },
+                {
+                  "entity": "lock.mg_mgs5_ev_lock",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                },
+                {
+                  "entity": "switch.mg_mgs5_ev_heated_steering_wheel",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                },
+                {
+                  "entity": "switch.mg_mgs5_ev_rear_window_defrost",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                }
+              ],
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              }
+            },
+            {
+              "type": "custom:vehicle-status-card",
+              "name": "Vehicle Status Card",
+              "layout_config": {
+                "button_grid": {
+                  "rows": 2,
+                  "columns": 2,
+                  "swipe": true
+                },
+                "images_swipe": {
+                  "height": 150
+                },
+                "section_order": [
+                  "indicators",
+                  "images",
+                  "range_info",
+                  "mini_map",
+                  "buttons"
+                ],
+                "hide_card_name": true,
+                "range_info_config": {
+                  "layout": "row"
+                },
+                "single_tire_card": {
+                  "tire_card": {
+                    "front_left": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_front_left"
+                    },
+                    "front_right": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_front_right"
+                    },
+                    "rear_left": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_rear_left"
+                    },
+                    "rear_right": {
+                      "entity": "sensor.mg_mgs5_ev_tyre_pressure_rear_right"
+                    }
+                  },
+                  "enabled": false
+                }
+              },
+              "mini_map": {
+                "device_tracker": "device_tracker.fordpass_wf0spbef1tsd01110_tracker",
+                "enable_popup": true,
+                "map_zoom": 16,
+                "hide_map_address": true,
+                "use_zone_name": false,
+                "user_location": false
+              },
+              "indicator_rows": [
+                {
+                  "row_items": []
+                }
+              ],
+              "range_info": [
+                {
+                  "energy_level": {
+                    "entity": "sensor.fordpass_wf0spbef1tsd01110_soc",
+                    "value_alignment": "start",
+                    "value_position": "inside",
+                    "max_value": 100,
+                    "icon_state_color": true,
+                    "hide_icon": false
+                  },
+                  "range_level": {
+                    "value_position": "outside",
+                    "entity": "sensor.fordpass_wf0spbef1tsd01110_odometer"
+                  },
+                  "progress_color": "#37e0ff",
+                  "color_blocks": false,
+                  "color_thresholds": [],
+                  "charging_entity": "sensor.fordpass_wf0spbef1tsd01110_elvehcharging",
+                  "charge_target_tooltip": true,
+                  "charging_template": "{{ states('sensor.fordpass_wf0spbef1tsd01110_elvehcharging') }}"
+                }
+              ],
+              "images": [
+                {
+                  "image": "/api/image/serve/f89c53fb3398132b5ab42098d77514a6/original"
+                }
+              ],
+              "button_cards": [
+                {
+                  "entity": "switch.fordpass_wf0spbef1tsd01110_ignition",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                },
+                {
+                  "entity": "lock.fordpass_wf0spbef1tsd01110_doorlock",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                },
+                {
+                  "entity": "switch.fordpass_wf0spbef1tsd01110_rccdefrostfront",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                },
+                {
+                  "entity": "switch.fordpass_wf0spbef1tsd01110_rccdefrostrear",
+                  "show_icon": true,
+                  "show_primary": true,
+                  "show_secondary": true,
+                  "layout": "horizontal",
+                  "button_type": "action",
+                  "tap_action": {
+                    "action": "more-info"
+                  },
+                  "card_type": "default",
+                  "icon_type": "icon",
+                  "primary_info": "name"
+                }
+              ],
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "📒 Fahrtenbuch Capri",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "entities",
+              "title": "Letzte Fahrt",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "entities": [
+                {
+                  "entity": "sensor.aussen_fartenbuch_last_start_address",
+                  "name": "Start"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_last_end_address",
+                  "name": "Ziel"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_last_distance",
+                  "name": "Strecke"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_last_driving_time",
+                  "name": "Fahrzeit"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_last_efficiency",
+                  "name": "Verbrauch je 100 km"
+                }
+              ]
+            },
+            {
+              "type": "entities",
+              "title": "Gesamt",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              },
+              "entities": [
+                {
+                  "entity": "binary_sensor.aussen_fartenbuch_trip_active",
+                  "name": "Aktive Fahrt"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_trip_count",
+                  "name": "Fahrten"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_total_distance",
+                  "name": "Gesamtkilometer"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_average_consumption",
+                  "name": "Ø Verbrauch"
+                },
+                {
+                  "entity": "sensor.aussen_fartenbuch_charge_count",
+                  "name": "Ladevorgänge"
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sections",
+      "title": "Sicherheit",
+      "path": "sicherheit",
+      "icon": "mdi:shield-home",
+      "theme": "Neonplan3D",
+      "max_columns": 4,
+      "dense_section_placement": true,
+      "badges": [],
+      "sections": [
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🛡️ Status",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.haus_fenster_offen",
+              "icon": "mdi:window-closed-variant",
+              "custom_fields": {
+                "title": "Fenster",
+                "text": "[[[ return states['sensor.fenster_status_text']?.state || '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 12,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.haus_turen_offen",
+              "icon": "mdi:door-closed",
+              "custom_fields": {
+                "title": "Türen",
+                "text": "[[[ return states['sensor.turen_status_text']?.state || '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 12,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.homematic_ip_turkontakt_keller",
+              "icon": "mdi:door",
+              "custom_fields": {
+                "title": "Kellertür",
+                "text": "[[[ return entity.state === 'on' ? 'Offen' : 'Geschlossen'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 12,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:button-card",
+              "template": "neon_tile",
+              "entity": "binary_sensor.statusseite_hausalarm_aktiv",
+              "icon": "mdi:home-alert-outline",
+              "custom_fields": {
+                "title": "Hausalarm",
+                "text": "[[[ return states['sensor.statusseite_hausalarm_text']?.state || '-'; ]]]"
+              },
+              "styles": {
+                "icon": [
+                  {
+                    "color": "[[[ return entity.state === 'on' ? '#ff4d40' : '#4dff80'; ]]]"
+                  }
+                ]
+              },
+              "tap_action": {
+                "action": "more-info"
+              },
+              "grid_options": {
+                "columns": 12,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🚨 Alarmo",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "custom:alarmo-card",
+              "entity": "alarm_control_panel.home",
+              "name": "Haus",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "custom:alarmo-card",
+              "entity": "alarm_control_panel.keller",
+              "name": "Keller",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "column_span": 4,
+          "cards": [
+            {
+              "type": "heading",
+              "heading": "🎥 Kameras",
+              "icon": "",
+              "heading_style": "title"
+            },
+            {
+              "type": "picture-entity",
+              "entity": "camera.terrasse",
+              "name": "Terrasse",
+              "camera_view": "auto",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            },
+            {
+              "type": "picture-entity",
+              "entity": "camera.tb361fu",
+              "name": "Flur (Tablet)",
+              "camera_view": "auto",
+              "card_mod": {
+                "style": "ha-card {\n  background: #0d1628;\n  border: 1px solid rgba(120,190,255,0.22);\n  border-radius: 18px;\n  box-shadow: 0 0 14px rgba(55,224,255,0.12);\n  --primary-text-color: #e6eefc;\n  --secondary-text-color: #a9b8d4;\n  --state-icon-color: #37e0ff;\n  --primary-color: #37e0ff;\n}\n"
+              },
+              "grid_options": {
+                "columns": 24,
+                "rows": "auto"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "sidebar": {
+    "template": "{% set days = ['Montag','Dienstag','Mittwoch','Donnerstag','Freitag','Samstag','Sonntag'] %}<li>{% if now().hour < 5 %}Gute Nacht,{% elif now().hour < 12 %}Guten Morgen,{% elif now().hour < 18 %}Guten Tag,{% else %}Guten Abend,{% endif %} heute ist {{ days[now().weekday()] }}, der {{ now().strftime('%d.%m.%Y') }}</li>\n{% if 'Müll' in states('calendar.hausordnung') %}<li>Heute Müll rausstellen!</li>{% endif %}\n{% if 'Hausordnung' in states('calendar.hausordnung') %}<li>Heute Hausordnung</li>{% endif %}\n{% if is_state('person.carsten_martens', 'home') %}<li>Carsten ist zuhause 🏠</li>{% elif is_state('person.carsten_martens', 'not_home') %}<li>Carsten ist unterwegs 🚗</li>{% else %}<li>Carsten: {{ states('person.carsten_martens') }}</li>{% endif %}\n{% if is_state('person.elke_martens', 'home') %}<li>Elke ist zuhause 🏠</li>{% elif is_state('person.elke_martens', 'not_home') %}<li>Elke ist unterwegs 🚗</li>{% else %}<li>Elke: {{ states('person.elke_martens') }}</li>{% endif %}\n",
+    "width": {
+      "mobile": 0,
+      "tablet": 20,
+      "desktop": 20
+    },
+    "digitalClock": true,
+    "style": ":host {\n  --sidebar-background: #0d1628;\n  --sidebar-text-color: #e6eefc;\n  --sidebar-icon-color: #37e0ff;\n  --sidebar-selected-text-color: #37e0ff;\n  --sidebar-selected-icon-color: #37e0ff;\n  border-right: 1px solid rgba(120,190,255,0.22);\n  box-shadow: 0 0 18px rgba(55,224,255,0.15);\n}\n",
+    "sidebarMenu": [
+      {
+        "action": "navigate",
+        "navigation_path": "/dashboard-dashboard/home",
+        "name": "Home",
+        "active": true,
+        "icon": "mdi:home"
+      },
+      {
+        "action": "navigate",
+        "navigation_path": "/dashboard-dashboard/karl",
+        "name": "Karl",
+        "active": true,
+        "icon": "mdi:robot-vacuum"
+      },
+      {
+        "action": "navigate",
+        "navigation_path": "/dashboard-dashboard/bkw",
+        "name": "Balkonkraftwerk",
+        "active": true,
+        "icon": "mdi:solar-panel"
+      },
+      {
+        "action": "navigate",
+        "navigation_path": "/dashboard-dashboard/wetter",
+        "name": "Wetter",
+        "active": true,
+        "icon": "mdi:weather-partly-cloudy"
+      },
+      {
+        "action": "navigate",
+        "navigation_path": "/dashboard-dashboard/autos",
+        "name": "Autos",
+        "active": true,
+        "icon": "mdi:car-electric"
+      },
+      {
+        "action": "navigate",
+        "navigation_path": "/dashboard-dashboard/sicherheit",
+        "name": "Sicherheit",
+        "active": true,
+        "icon": "mdi:shield-home"
+      }
+    ]
+  },
+  "kiosk_mode": {
+    "hide_sidebar": true,
+    "hide_header": false,
+    "mobile_settings": {
+      "hide_header": true
+    },
+    "admin_settings": {
+      "hide_sidebar": false,
+      "hide_header": false
+    },
+    "non_admin_settings": {
+      "hide_sidebar": true,
+      "hide_header": true
+    }
+  },
+  "button_card_templates": {
+    "neon_tile": {
+      "show_icon": true,
+      "show_name": false,
+      "show_state": false,
+      "styles": {
+        "card": [
+          {
+            "background": "#0d1628"
+          },
+          {
+            "border": "1px solid rgba(120,190,255,0.22)"
+          },
+          {
+            "border-radius": "18px"
+          },
+          {
+            "padding": "14px"
+          },
+          {
+            "height": "104px"
+          },
+          {
+            "box-shadow": "0 0 14px rgba(55,224,255,0.12)"
+          }
+        ],
+        "grid": [
+          {
+            "grid-template-areas": "\"i title\" \"i text\""
+          },
+          {
+            "grid-template-columns": "42px 1fr"
+          },
+          {
+            "grid-template-rows": "min-content 1fr"
+          },
+          {
+            "column-gap": "10px"
+          }
+        ],
+        "icon": [
+          {
+            "width": "26px"
+          },
+          {
+            "color": "#37e0ff"
+          },
+          {
+            "align-self": "start"
+          },
+          {
+            "margin-top": "2px"
+          }
+        ],
+        "custom_fields": {
+          "title": [
+            {
+              "font-size": "12px"
+            },
+            {
+              "color": "#a9b8d4"
+            },
+            {
+              "align-self": "end"
+            },
+            {
+              "justify-self": "start"
+            },
+            {
+              "text-transform": "uppercase"
+            },
+            {
+              "letter-spacing": "0.08em"
+            }
+          ],
+          "text": [
+            {
+              "font-size": "19px"
+            },
+            {
+              "color": "#e6eefc"
+            },
+            {
+              "align-self": "start"
+            },
+            {
+              "justify-self": "start"
+            },
+            {
+              "text-align": "left"
+            },
+            {
+              "line-height": "1.3"
+            }
+          ]
+        }
+      }
+    },
+    "neon_weather": {
+      "show_icon": true,
+      "show_name": false,
+      "show_state": false,
+      "styles": {
+        "card": [
+          {
+            "background": "linear-gradient(135deg, #0d1628 0%, #16223a 100%)"
+          },
+          {
+            "border": "1px solid rgba(120,190,255,0.22)"
+          },
+          {
+            "border-radius": "22px"
+          },
+          {
+            "padding": "20px"
+          },
+          {
+            "height": "220px"
+          },
+          {
+            "box-shadow": "0 0 22px rgba(55,224,255,0.18)"
+          }
+        ],
+        "grid": [
+          {
+            "grid-template-areas": "\"i trend\" \"i temp\" \"i details\""
+          },
+          {
+            "grid-template-columns": "110px 1fr"
+          },
+          {
+            "grid-template-rows": "min-content 1fr min-content"
+          },
+          {
+            "column-gap": "18px"
+          }
+        ],
+        "icon": [
+          {
+            "width": "72px"
+          },
+          {
+            "color": "#37e0ff"
+          },
+          {
+            "justify-self": "start"
+          },
+          {
+            "align-self": "start"
+          },
+          {
+            "margin-top": "8px"
+          },
+          {
+            "filter": "drop-shadow(0 0 8px rgba(55,224,255,0.6))"
+          }
+        ],
+        "custom_fields": {
+          "trend": [
+            {
+              "justify-self": "end"
+            },
+            {
+              "text-align": "right"
+            },
+            {
+              "font-size": "18px"
+            },
+            {
+              "color": "#a9b8d4"
+            }
+          ],
+          "temp": [
+            {
+              "justify-self": "end"
+            },
+            {
+              "align-self": "center"
+            },
+            {
+              "font-size": "64px"
+            },
+            {
+              "line-height": "1"
+            },
+            {
+              "font-weight": "300"
+            },
+            {
+              "color": "#e6eefc"
+            },
+            {
+              "text-shadow": "0 0 12px rgba(55,224,255,0.45)"
+            }
+          ],
+          "details": [
+            {
+              "justify-self": "end"
+            },
+            {
+              "text-align": "right"
+            },
+            {
+              "font-size": "15px"
+            },
+            {
+              "line-height": "1.45"
+            },
+            {
+              "color": "#a9b8d4"
+            }
+          ]
+        }
+      }
+    }
+  }
+}
