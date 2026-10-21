@@ -29,7 +29,7 @@ Die alten Ansichten `neonplan3d`, `robi`, `bkw`, `auto`, `cameras` sind in den n
 
 - button-card-Vorlagen `neon_tile` und `neon_weather` im Dashboard.
 - Standardkarten bekommen die Farben per `card_mod` (läuft über UIX).
-- Alle Ansichten setzen `theme: Neonplan3D`. Das Theme liegt in [themes/neonplan3d.yaml](../themes/neonplan3d.yaml) und muss nach `/config/themes/` kopiert und mit `frontend.reload_themes` geladen werden. Bis dahin greift das Benutzer-Theme für Seitenhintergrund und Überschriften.
+- Alle Ansichten setzen `theme: Neonplan3D`. Das Theme liegt in [themes/neonplan3d.yaml](../themes/neonplan3d.yaml) und ist seit 2026-10-21 unter `/config/themes/` eingespielt (geladen mit `frontend.reload_themes`).
 
 ## Umsetzung und Rückweg
 
