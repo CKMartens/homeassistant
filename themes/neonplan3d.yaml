@@ -1,0 +1,49 @@
+# Theme "Neonplan3D": Farben aus der NeonPlan-3D-Karte (v1.21.0), für das Test Dashboard.
+# Ablage: /config/themes/neonplan3d.yaml, danach Aktion frontend.reload_themes.
+# Die Ansichten im Test Dashboard verweisen bereits per `theme: Neonplan3D` darauf.
+Neonplan3D:
+  # Grundfarben
+  primary-color: "#37e0ff"
+  accent-color: "#ff5fd2"
+  rgb-primary-color: "55, 224, 255"
+  primary-background-color: "#070b14"
+  secondary-background-color: "#0d1628"
+  lovelace-background: "radial-gradient(ellipse at top, #16223a 0%, #070b14 70%)"
+  # Text
+  primary-text-color: "#e6eefc"
+  secondary-text-color: "#a9b8d4"
+  text-primary-color: "#070b14"
+  disabled-text-color: "#5b6a86"
+  # Karten
+  card-background-color: "#0d1628"
+  ha-card-background: "rgba(13, 22, 40, 0.92)"
+  ha-card-border-color: "rgba(120, 190, 255, 0.22)"
+  ha-card-border-width: "1px"
+  ha-card-border-radius: "18px"
+  ha-card-box-shadow: "0 0 14px rgba(55, 224, 255, 0.12)"
+  divider-color: "rgba(120, 190, 255, 0.22)"
+  # Icons und Zustände
+  state-icon-color: "#37e0ff"
+  state-active-color: "#37e0ff"
+  state-light-on-color: "#ffb547"
+  state-switch-on-color: "#37e0ff"
+  state-binary_sensor-on-color: "#ffb547"
+  success-color: "#4dff80"
+  warning-color: "#ffcc40"
+  error-color: "#ff4d40"
+  info-color: "#37e0ff"
+  # Kopfzeile und Seitenleiste
+  app-header-background-color: "#0d1628"
+  app-header-text-color: "#e6eefc"
+  sidebar-background-color: "#0d1628"
+  sidebar-text-color: "#e6eefc"
+  sidebar-icon-color: "#37e0ff"
+  sidebar-selected-icon-color: "#37e0ff"
+  sidebar-selected-text-color: "#37e0ff"
+  # Mushroom
+  mush-rgb-state-entity: "55, 224, 255"
+  mush-card-primary-color: "#e6eefc"
+  mush-card-secondary-color: "#a9b8d4"
+  # Eingaben
+  input-fill-color: "#16223a"
+  mdc-theme-primary: "#37e0ff"

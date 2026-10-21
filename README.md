@@ -4,6 +4,7 @@ Konfiguration und Doku für Home Assistant „Casa Martens“: Blueprints, Autom
 
 - `blueprints/automation/`: eigene Blueprints
 - `packages/`: YAML je Thema, nutzbar als HA-Package oder zum Kopieren in die UI (Hinweise im Kopfkommentar jeder Datei)
+- `dashboards/`, `themes/`: Dashboard-Umbauten und Themes
 - `docs/`: Beschreibung, Ablauf und Stolperfallen je Thema
 
 ## Blueprints
@@ -25,6 +26,7 @@ Konfiguration und Doku für Home Assistant „Casa Martens“: Blueprints, Autom
 | Zigbee2MQTT-Wächter | [Package](packages/zigbee2mqtt_waechter.yaml) · [Doku](docs/zigbee2mqtt_waechter.md) | `automation.system_zigbee2mqtt_wachter` prüft nach dem HA-Start, bei offline-Bridge und alle 30 min, ob Zigbee2MQTT läuft, startet das Add-on bis zu 3x mit Abstand neu und meldet Erfolg oder Fehlschlag aufs Pixel 9. | live seit 2026-10-17 |
 | Auto-Stellplätze | [Package](packages/auto_stellplaetze.yaml) · [Doku](docs/auto_stellplaetze.md) | `binary_sensor.auto_capri_zuhause` und `binary_sensor.auto_mg_zuhause` sind an, wenn der Ford Capri bzw. der MG laut GPS-Tracker der Hersteller-Integration in `zone.home` steht; `binary_sensor.auto_capri_eingesteckt` zeigt, ob der Capri am Ladekabel hängt (FordPass). Für die Stellplätze in Neonplan3D, ohne Außensensoren. | live seit 2026-10-18 (UI-Helfer) |
 | Bad Licht und Lüfter | [Package](packages/bad_licht_lufter.yaml) · [Doku](docs/bad_licht_lufter.md) | `automation.bad_licht_nach_prasenz` schaltet das Badlicht (HmIP-BS2 Kanal 4) nach dem Präsenzmelder HmIP-SPI, 1 min Nachlauf. `automation.bad_lufter_nach_prasenz_und_feuchte` lässt den Lüfter (Kanal 8) bei Anwesenheit laufen, 10 min nach, und regelt zusätzlich nach Luftfeuchte (HmIP-STHD, Schwellen per `input_number`). Doku mit Anleitung für die Direktverknüpfung in der OpenCCU und zum Ablernen von Geräten. | live seit 2026-10-20 (UI-Speicher) |
+| Test Dashboard | [Umbau-Skript](dashboards/test_dashboard_umbau.py) · [Theme](themes/neonplan3d.yaml) · [Doku](docs/test_dashboard.md) | Menüleiste wie im „Dashboard“, Startseite NeonPlan 3D, Seiten Karl, Balkonkraftwerk, Wetter, Autos, Sicherheit in NeonPlan-Farben. Alte Raum-Ansichten als Unterseiten. | live seit 2026-10-21 (Theme-Datei noch einzuspielen) |
 
 ## Pflege
 
