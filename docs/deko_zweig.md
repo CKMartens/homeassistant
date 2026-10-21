@@ -1,6 +1,6 @@
 # Wohnbereich – LED Deko Zweig (Elke)
 
-Stand 2026-10-21: Umbau auf Steckdose offline vorbereitet. Die IR-Version (Stand 2026-10-14) läuft seitdem in HA.
+Stand 2026-10-21: live in HA als UI-Automation `automation.led_dekozweig_2` (Alias „Wohnbereich – Deko Zweig Zeitsteuerung“) plus UI-Skripte; getestet, Steckdose aus/an → Prog8 kommt. Die alte `automation.led_dekozweig` ist deaktiviert, das doppelte `script.1791960581273` kann weg.
 YAML: [`packages/deko_zweig.yaml`](../packages/deko_zweig.yaml)
 
 Der Zweig blinkt nach dem Einschalten. Ein und aus geht über die Steckdose, danach kommt per IR `Prog8`, damit er ruhig leuchtet.
@@ -12,7 +12,7 @@ Der Zweig blinkt nach dem Einschalten. Ein und aus geht über die Steckdose, dan
 | Steckdose (Ein/Aus, Zustand) | `switch.wohnbereich_steckdose_deko` |
 | IR-Sender (Broadlink Mini) | `remote.ir_remote_wohnbereich`, Gerät `LED Deko Zweig`, Befehl `Prog8` (`An`/`Aus` angelernt, aber ungenutzt) |
 | Einschalten / Ausschalten | `script.wohnbereich_deko_zweig_an`, `script.wohnbereich_deko_zweig_aus` |
-| Automation | `automation.wohnbereich_deko_zweig_zeitsteuerung` |
+| Automation | `automation.led_dekozweig_2` (Package-Variante: `automation.wohnbereich_deko_zweig_zeitsteuerung`) |
 | Werktag/Feiertag | `binary_sensor.workday_sensor` (Workday-Integration, DE) |
 | Anwesenheit | `zone.home` (Carsten Pixel 9, Elke Pixel 9a) |
 
