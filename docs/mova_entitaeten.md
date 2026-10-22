@@ -24,6 +24,8 @@ Der Robi heißt bei uns **Karl**.
 
 **Automatik:** `automation.haushalt_karl_reinigung_bei_abwesenheit` startet Mo–Fr 07–17 Uhr, wenn `zone.home` 10 min auf 0 steht, `input_boolean.karl_automatik` an ist und heute noch nicht gereinigt wurde (Automatik, Dashboard oder Mova-App über `sensor.z60_ultra_roller_standalone_cleaning_history`). Modus aus dem Kalender „Haushalt“. Vorher Ansage per `notify.alexa_media` (type announce) auf `media_player.echo_wohnzimmer`, `echo_schlafzimmer`, `echo_dot_buro`, Echos mit „Bitte nicht stören“ werden ausgelassen: „Entschuldigung, dass ich störe. Das Saugen / Das Saugen und Wischen / Die Intensivreinigung startet in fünf Minuten.“ Kommt in den 5 Minuten jemand heim, bleibt Karl stehen.
 
+**Reinigungsart:** „Saugen“ = `sweeping`; „Saugen & Wischen“ und „Intensiv“ = `mopping_after_sweeping` (erst saugen, dann wischen, wie „Wischen nach dem Saugen“ in der Mova-App; seit 2026-10-22, vorher gleichzeitig). Die Integration blendet `mopping_after_sweeping` je nach Zustand aus; dann setzt das Skript erst `sweeping`, wartet bis 10 s und fällt sonst auf `sweeping_and_mopping` zurück (mit HA-Benachrichtigung).
+
 **Override:** `script.haushalt_mova_reinigung_starten` mit Feldern `modus` (saugen, saugen_wischen, intensiv) und `raeume` (Segment-IDs, leer = überall; Einzelräume über `dreame_vacuum.vacuum_clean_segment`). Jeder Start setzt `input_datetime.mova_letzte_auto_reinigung` auf heute.
 
 **Dashboard** (Test Dashboard, Ansicht `robi`):

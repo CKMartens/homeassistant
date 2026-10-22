@@ -1,6 +1,7 @@
 # =============================================================================
 # Karl (MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt" + Override
-# Stand: 2026-10-21, v2 live in HA (UI-Speicher, per ha-mcp eingespielt)
+# Stand: 2026-10-22, v2 live in HA (UI-Speicher, per ha-mcp eingespielt);
+#   seit 2026-10-22 wischt Karl bei "Saugen & Wischen" und "Intensiv" erst nach dem Saugen
 #
 # Live:
 #   input_boolean.karl_automatik            Kalender-Automatik an/aus
@@ -82,8 +83,8 @@ script:
       ent_individuell: switch.z60_ultra_roller_standalone_customized_cleaning
       profile:
         saugen:         {reinigungsart: "sweeping",             saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: null}
-        saugen_wischen: {reinigungsart: "sweeping_and_mopping", saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: 16}
-        intensiv:       {reinigungsart: "sweeping_and_mopping", saugstaerke: "turbo",    stufe: 3, route: "intensive", feuchte: 22}
+        saugen_wischen: {reinigungsart: "mopping_after_sweeping", saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: 16}
+        intensiv:       {reinigungsart: "mopping_after_sweeping", saugstaerke: "turbo",    stufe: 3, route: "intensive", feuchte: 22}
       p: "{{ profile[modus] }}"
       segmente: >-
         {{ (raeume if raeume is defined and raeume else []) | map('int') | list }}
@@ -101,9 +102,39 @@ script:
             target: {entity_id: "{{ ent_individuell }}"}
           - delay: "00:00:03"
 
-      - action: select.select_option
-        target: {entity_id: "{{ ent_reinigungsart }}"}
-        data: {option: "{{ p.reinigungsart }}"}
+      - alias: Reinigungsart setzen (mit Fallback)
+        if:
+          - condition: template
+            value_template: "{{ p.reinigungsart in (state_attr(ent_reinigungsart, 'options') or []) }}"
+        then:
+          - action: select.select_option
+            target: {entity_id: "{{ ent_reinigungsart }}"}
+            data: {option: "{{ p.reinigungsart }}"}
+        else:
+          # mopping_after_sweeping blendet die Integration je nach Zustand aus:
+          # erst sweeping setzen, kurz warten, sonst gleichzeitig wischen
+          - action: select.select_option
+            target: {entity_id: "{{ ent_reinigungsart }}"}
+            data: {option: sweeping}
+          - wait_template: "{{ p.reinigungsart in (state_attr(ent_reinigungsart, 'options') or []) }}"
+            timeout: "00:00:10"
+            continue_on_timeout: true
+          - if:
+              - condition: template
+                value_template: "{{ wait.completed }}"
+            then:
+              - action: select.select_option
+                target: {entity_id: "{{ ent_reinigungsart }}"}
+                data: {option: "{{ p.reinigungsart }}"}
+            else:
+              - action: select.select_option
+                target: {entity_id: "{{ ent_reinigungsart }}"}
+                data: {option: sweeping_and_mopping}
+              - action: persistent_notification.create
+                data:
+                  notification_id: karl_wischen_nach_saugen
+                  title: Karl
+                  message: "Karl: Wischen nach dem Saugen nicht verfügbar, gleichzeitig gestartet"
       - action: select.select_option
         target: {entity_id: "{{ ent_saugstaerke }}"}
         data: {option: "{{ p.saugstaerke }}"}
