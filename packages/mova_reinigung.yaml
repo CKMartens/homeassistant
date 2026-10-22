@@ -1,6 +1,7 @@
 # =============================================================================
 # Karl (MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt" + Override
-# Stand: 2026-10-21, v2 live in HA (UI-Speicher, per ha-mcp eingespielt)
+# Stand: 2026-10-22, v2 live in HA (UI-Speicher, per ha-mcp eingespielt);
+#   seit 2026-10-22 wischt Karl bei "Saugen & Wischen" und "Intensiv" erst nach dem Saugen
 #
 # Live:
 #   input_boolean.karl_automatik            Kalender-Automatik an/aus
@@ -82,8 +83,8 @@ script:
       ent_individuell: switch.z60_ultra_roller_standalone_customized_cleaning
       profile:
         saugen:         {reinigungsart: "sweeping",             saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: null}
-        saugen_wischen: {reinigungsart: "sweeping_and_mopping", saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: 16}
-        intensiv:       {reinigungsart: "sweeping_and_mopping", saugstaerke: "turbo",    stufe: 3, route: "intensive", feuchte: 22}
+        saugen_wischen: {reinigungsart: "mopping_after_sweeping", saugstaerke: "standard", stufe: 1, route: "standard",  feuchte: 16}
+        intensiv:       {reinigungsart: "mopping_after_sweeping", saugstaerke: "turbo",    stufe: 3, route: "intensive", feuchte: 22}
       p: "{{ profile[modus] }}"
       segmente: >-
         {{ (raeume if raeume is defined and raeume else []) | map('int') | list }}
