@@ -1,0 +1,80 @@
+# =============================================================================
+# Wohnbereich – Jalousie Terrassentür (CCA / Cover Control Automation)
+# Stand: 2026-11-11, live in HA als UI-Automation automation.jalousie_terassentur
+#   (UI-id 1776846739613, Blueprint hvorragend/cover_control_automation.yaml).
+#   Vor der Änderung: ha-mcp-Backup automation.jalousie_terassentur.20261111_050903.yaml
+#
+# Nutzung: In der UI "In YAML bearbeiten" und die Blueprint-Eingaben vergleichen.
+#   Den Blueprint selbst nicht ändern, nur die Eingaben.
+#
+# Fix 2026-11-11 (Jalousie fuhr am 08., 09. und 10.11. abends nicht herunter):
+#   - ignore_closing_after_manual entfernt: das abendliche Schließen läuft jetzt
+#     auch nach einer Handfahrt (Taster, Homepilot-App), wie bei den anderen CCAs.
+#   - reset_override_config: reset_fixed_time um 00:01. Vorher gab es keinen
+#     Reset, eine manuelle Übersteuerung blieb also für immer stehen.
+# =============================================================================
+id: "1776846739613"
+alias: Jalousie Terassentür
+description: >-
+  CCA für die Jalousie Terrassentür: öffnet morgens und schließt um 22:00, auch
+  nach einer manuellen Fahrt; die manuelle Übersteuerung wird täglich um 00:01
+  zurückgesetzt.
+use_blueprint:
+  path: hvorragend/cover_control_automation.yaml
+  input:
+    blind: cover.rollotron_terassentur
+    cover_status_helper: input_text.helfer_jalousie_terassentur
+    instance_active: input_boolean.jalousie_wohnbereich_status
+    auto_options:
+      - time_control_enabled
+      - auto_up_enabled
+      - auto_down_enabled
+    individual_config:
+      - prevent_higher_position_closing
+      - prevent_shading_end_if_closed
+    # Zeiten
+    time_up_early: "05:30:00"
+    time_up_early_non_workday: "06:30:00"
+    time_up_late: "05:30:00"
+    time_up_late_non_workday: "06:30:00"
+    time_down_early: "22:00:00"
+    time_down_early_non_workday: "22:00:00"
+    workday_sensor: binary_sensor.workday_sensor
+    workday_sensor_tomorrow: binary_sensor.workday_sensor
+    sun_elevation_mode: fixed
+    sun_elevation_down: 30
+    sun_elevation_down_sensor: sensor.sun_next_dusk
+    drive_delay_random: 20
+    # Positionen
+    close_position: 0
+    ventilate_position: 40
+    shading_position: 30
+    # Fenster (Drehgriff Terrassentür): gekippt sperrt das Schließen
+    contact_window_opened: binary_sensor.homeatic_ip_drehgriffkontakt_terrassentur_drehgriff_terrassentur_fensterzustand
+    contact_window_tilted: binary_sensor.homeatic_ip_drehgriffkontakt_terrassentur_drehgriff_terrassentur_fensterzustand
+    lockout_tilted_options:
+      - lockout_tilted_closing
+    # Beschattung (in auto_options nicht aktiv, Werte für später)
+    shading_conditions_start_or:
+      - cond_azimuth
+    shading_conditions_end_and:
+      - cond_elevation
+    shading_azimuth_start: 50
+    shading_azimuth_end: 190
+    shading_elevation_min: 30
+    shading_temperatur_sensor1: sensor.funk_wandthermostat_wohnbereich_klima_wohnzimmer_temperatur
+    shading_min_temperatur1: 24
+    # Manuelle Übersteuerung
+    ignore_after_manual_config:
+      - ignore_shading_after_manual
+      - ignore_opening_after_manual
+    reset_override_config:
+      - reset_fixed_time
+    reset_override_time: "00:01:00"
+    # Sonstiges
+    enable_recovery: outage
+    check_config: true
+    check_config_debuglevel: debug
+    enable_logbook: false
+    enable_logbook_cover: false
+    trace_count: 10
