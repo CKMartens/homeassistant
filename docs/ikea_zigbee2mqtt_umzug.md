@@ -18,9 +18,10 @@ Stolperfalle: Die Gruppe **Alarm** ist ein UI-Helfer (Config Entry). Ein Umbenen
 |---|---|---|---|---|
 | Deckenlicht Abstellraum | `light.88009a12_3aa6_4957_a9bb_6152a34dae6d_1` (Gerät „Abstellraum_Deckenlampe“) | `light.abstellraum_deckenlicht` (Gerät „Abstellraum Deckenlicht“, Z2M meldet Innr Smart bulb tunable white E27) | `automation.licht_abstellraum`, Gruppe Alarm, Test Dashboard (Raumkarte Abstellraum) | 2026-11-13 |
 | Schreibtischlampe Büro | `light.198837aa_ebdb_4b08_9c60_97a882d688e0_1` (Gerät „Schreibtischlampe“, Dirigera meldete innr RB 278 T) | `light.buro_schreibtisch_1` (Gerät „Büro Schreibtisch 1“, Z2M meldet IKEA TRADFRI E27 opal 1000 lm) | `automation.taster_schreibtischlampe_carsten` (IKEA-Taster an/aus), Gruppe Alarm, Test Dashboard (Ansicht Büro) | 2026-11-13 |
+| Deckenlicht Flur | `light.d275ff70_a0f2_4e61_81b6_58d8fc6a3107_1` (Gerät „Flur “) | `light.flur_deckenlicht` (Gerät „Flur Deckenlicht“, IKEA TRADFRI E27 opal 1000 lm) | `automation.licht_flur`, `automation.tester_flur`, `automation.flur_licht_manuell_zurucksetzen`, `automation.flur_homematic_ip_6fach_taster` (Taste 4), `automation.nachtmodus_aktivieren`, Gruppe Alarm, Test Dashboard (Raumkarte Flur, Ansicht Flur) | 2026-11-13 |
 
-Nebenbei korrigiert: In der Flur-Raumkarte im Test Dashboard stand unter `lights` die Abstellraum-Lampe, jetzt das Flurlicht `light.d275ff70_a0f2_4e61_81b6_58d8fc6a3107_1` (wird beim Flur-Umzug ersetzt).
+Nebenbei korrigiert: In der Flur-Raumkarte im Test Dashboard stand unter `lights` die Abstellraum-Lampe, jetzt das Flurlicht.
 
 Hinweis: Die Hersteller-Angaben von Dirigera und Z2M passen bei Abstellraum und Büro über Kreuz (IKEA ↔ Innr). Maßgeblich ist, wo die Lampe physisch sitzt und wie sie in Z2M benannt wurde.
 
-Offen: Flur, Eingang Bulb 1, Schreibtischlampe 2 (`light.dd9558df_…_1`, noch über Dirigera) und weitere.
+Offen: Eingang Bulb 1 und 2, Schreibtischlampe 2 (`light.dd9558df_…_1`, noch über Dirigera) und weitere.
