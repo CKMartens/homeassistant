@@ -1,6 +1,6 @@
 # Ford Capri (Elke) – Vorklimatisierung an Diensttagen
 
-Stand 2026-10-07, live in HA als `automation.auto_capri_vorklimatisierung_diensttage`.
+Stand 2026-11-14 (Wetter-Fallback), live in HA als `automation.auto_capri_vorklimatisierung_diensttage`.
 YAML: [`packages/capri_vorklimatisierung.yaml`](../packages/capri_vorklimatisierung.yaml)
 Schwester-Automation und Stufenlogik: [MG-Vorklimatisierung](mg_vorklimatisierung.md)
 
@@ -37,6 +37,20 @@ Die `sensor.ford_capri_2025_extended_range_rwd_*` kommen aus ABRP und sind nur l
 
 Geprüft wird bei Dienstbeginn − 95 min. Unter 20 % Akku gibt es keinen Start, außer der Capri hängt am Kabel.
 Wird der Start nicht bestätigt: Remote Sync, dann genau ein Retry, danach ein Push an Elke.
+
+## Wetter-Fallback (seit 2026-11-14)
+
+Am 2026-11-13 hat der Capri nicht vorgeheizt. Die Ecowitt-Station (WS2350) war seit dem Stromausfall vom 12.11. aus dem WLAN und ohne Außensensor, die Sensoren waren `unavailable`, und die Automation ist ohne Meldung ausgestiegen.
+
+Jetzt wird die Wetterquelle zuerst gewählt:
+
+| Quelle | Wann | Folge |
+|---|---|---|
+| `station` | alle drei WS2350-Werte (Temperatur, Taupunkt, Feuchte) gültig und letzte Meldung jünger als 30 min | normal weiter |
+| `vorhersage` | Station fehlt oder ist veraltet, `weather.forecast_home` (met.no) hat `temperature`, `dew_point`, `humidity` | weiter mit Vorhersagewerten, Push „Wetterstation liefert keine Daten“ an Carsten, im Start-Push steht „(Vorhersage)“ |
+| `keine` | beides fehlt | Push an Elke („bitte selbst prüfen“) und an Carsten, dann Stop |
+
+Die 30-min-Grenze nutzt `last_reported`, weil Ecowitt per Push meldet und bei Ausfall sonst der letzte Wert stehen bleiben könnte.
 
 ## Offen
 

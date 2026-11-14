@@ -1,6 +1,6 @@
 # MG MGS5 EV – Vorklimatisierung an Bürotagen
 
-Stand 2026-10-07, live in HA als `automation.auto_mg_vorklimatisierung_burotage`.
+Stand 2026-11-14 (Wetter-Fallback), live in HA als `automation.auto_mg_vorklimatisierung_burotage`.
 YAML: [`packages/mg_vorklimatisierung.yaml`](../packages/mg_vorklimatisierung.yaml)
 
 Ziel: An Bürotagen vor allem in der kalten Jahreszeit Freikratzen und beschlagene Scheiben vermeiden.
@@ -22,7 +22,7 @@ Ziel: An Bürotagen vor allem in der kalten Jahreszeit Freikratzen und beschlage
 | Heckscheibe | `switch.mg_mgs5_ev_rear_window_defrost` |
 | Lenkradheizung | `switch.mg_mgs5_ev_heated_steering_wheel` |
 | Akku | `sensor.mg_mgs5_ev_state_of_charge` |
-| Wetter aktuell | `sensor.ws2350_v2_38_outdoor_temperature`, `_dewpoint`, `_humidity` |
+| Wetter aktuell | `sensor.ws2350_v2_38_outdoor_temperature`, `_dewpoint`, `_humidity`, Fallback `weather.forecast_home` |
 | Vorhersage | `weather.forecast_home` (met.no, hourly + daily, Wind in km/h) |
 | Nachtwerte | `input_number.mg_nacht_bewolkung`, `_niederschlag`, `_wind` |
 | Push | `notify.mobile_app_pixel_9` |
@@ -40,6 +40,20 @@ Die Frostschwelle liegt bei +3 °C statt 0 °C: Bei klarem Himmel strahlt die Sc
 
 Je Zyklus: Heat/cool (entfeuchtet gegen Innenbeschlag), Heckscheibenheizung an, Lenkradheizung ab T ≤ 5 °C.
 Startet die Klima nicht innerhalb von 3 min, gibt es genau einen Retry, danach einen Push.
+
+## Wetter-Fallback (seit 2026-11-14)
+
+Am 2026-11-13 hat der MG nicht vorklimatisiert (gleiche Ursache wie beim Capri) nicht vorgeheizt. Die Ecowitt-Station (WS2350) war seit dem Stromausfall vom 12.11. aus dem WLAN und ohne Außensensor, die Sensoren waren `unavailable`, und die Automation ist ohne Meldung ausgestiegen.
+
+Jetzt wird die Wetterquelle zuerst gewählt:
+
+| Quelle | Wann | Folge |
+|---|---|---|
+| `station` | alle drei WS2350-Werte (Temperatur, Taupunkt, Feuchte) gültig und letzte Meldung jünger als 30 min | normal weiter |
+| `vorhersage` | Station fehlt oder ist veraltet, `weather.forecast_home` (met.no) hat `temperature`, `dew_point`, `humidity` | weiter mit Vorhersagewerten, Push „Wetterstation liefert keine Daten“ an Carsten, im Start-Push steht „(Vorhersage)“ |
+| `keine` | beides fehlt | Push an Carsten („bitte selbst prüfen“), dann Stop |
+
+Die 30-min-Grenze nutzt `last_reported`, weil Ecowitt per Push meldet und bei Ausfall sonst der letzte Wert stehen bleiben könnte.
 
 ## Offen
 
