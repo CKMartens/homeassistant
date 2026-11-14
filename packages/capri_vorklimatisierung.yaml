@@ -1,6 +1,6 @@
 # =============================================================================
 # Ford Capri (Elke) – Vorklimatisierung an Diensttagen
-# Stand: 2026-10-07, in HA eingespielt (Automation per ha-mcp)
+# Stand: 2026-11-14 (Wetter-Fallback), in HA eingespielt (Automation per ha-mcp)
 #   automation.auto_capri_vorklimatisierung_diensttage (id: auto_capri_vorklimatisierung_dienst)
 #
 # Nutzung:
@@ -14,6 +14,8 @@
 # Ablauf:
 #   Dienstbeginn − 95 min (Kalender-Trigger, nur Termine "Dienst"):
 #          Stufe 0–3 wie beim MG, SoC-Sperre < 20 % (außer am Kabel).
+#          Wetter: Ecowitt-Station, bei Ausfall weather.forecast_home + Push an
+#          Carsten; liefert beides nichts, Push an Elke statt stillem Abbruch.
 #   Abfahrt = Dienstbeginn − 60 min (Elke fährt gut 40 min).
 #   Start per FordPass-Fernstart: Abfahrt − 15 min, Stufe 3: Abfahrt − 30 min
 #          und nach 10 min einmal "Laufzeit verlängern".
@@ -44,19 +46,52 @@ automation:
         value_template: "{{ (trigger.calendar_event.summary | lower | trim) == 'dienst' }}"
 
     actions:
-      - alias: "Wettersensoren liefern gültige Werte"
-        condition: template
-        value_template: >-
-          {{ has_value('sensor.ws2350_v2_38_outdoor_temperature')
-             and has_value('sensor.ws2350_v2_38_dewpoint')
-             and has_value('sensor.ws2350_v2_38_humidity') }}
+      # Fallback seit 2026-11-14: Ecowitt ist eine Push-Integration und war nach dem
+      # Stromausfall vom 12.11. tot; die Automation brach damals still ab.
+      # Station gilt als gültig, wenn alle drei Werte da sind und die letzte
+      # Meldung < 30 min alt ist; sonst Vorhersage (met.no), sonst Push + Stop.
+      - alias: "Wetterquelle wählen (Station, sonst Vorhersage weather.forecast_home)"
+        variables:
+          quelle: >-
+            {% set e = ['sensor.ws2350_v2_38_outdoor_temperature', 'sensor.ws2350_v2_38_dewpoint', 'sensor.ws2350_v2_38_humidity'] %}{% set s = states.sensor.ws2350_v2_38_outdoor_temperature %}{% set w = 'weather.forecast_home' %}{% if (e | select('has_value') | list | count == 3) and s is not none and (now() - s.last_reported).total_seconds() < 1800 %}station{% elif state_attr(w, 'temperature') is number and state_attr(w, 'dew_point') is number and state_attr(w, 'humidity') is number %}vorhersage{% else %}keine{% endif %}
+
+      - alias: "Keine Wetterdaten: Bescheid geben statt still abbrechen"
+        if:
+          - condition: template
+            value_template: "{{ quelle == 'keine' }}"
+        then:
+          - action: notify.mobile_app_pixel_9a
+            data:
+              title: "Capri Vorklimatisierung ausgelassen"
+              message: >-
+                Weder Wetterstation noch Vorhersage liefern Werte. Bitte Scheiben
+                selbst prüfen und ggf. per FordPass-App starten.
+          - action: notify.mobile_app_pixel_9
+            data:
+              title: "Capri: keine Wetterdaten"
+              message: >-
+                Wetterstation und weather.forecast_home liefern keine Werte,
+                Capri-Vorklimatisierung ausgelassen.
+          - stop: "Keine Wetterdaten"
+
+      - alias: "Station ausgefallen: Carsten informieren"
+        if:
+          - condition: template
+            value_template: "{{ quelle == 'vorhersage' }}"
+        then:
+          - action: notify.mobile_app_pixel_9
+            data:
+              title: "Wetterstation liefert keine Daten"
+              message: >-
+                Ecowitt seit {{ as_timestamp(states.sensor.ws2350_v2_38_outdoor_temperature.last_reported, 0) | timestamp_custom('%d.%m. %H:%M') }}
+                ohne Daten. Capri-Vorklimatisierung nutzt die Vorhersage.
 
       # Abhängige Variablen in getrennten Schritten (ha-mcp sortiert Keys alphabetisch)
       - alias: "Messwerte lesen"
         variables:
-          t: "{{ states('sensor.ws2350_v2_38_outdoor_temperature') | float }}"
-          td: "{{ states('sensor.ws2350_v2_38_dewpoint') | float }}"
-          rh: "{{ states('sensor.ws2350_v2_38_humidity') | float }}"
+          t: "{{ (states('sensor.ws2350_v2_38_outdoor_temperature') if quelle == 'station' else state_attr('weather.forecast_home', 'temperature')) | float }}"
+          td: "{{ (states('sensor.ws2350_v2_38_dewpoint') if quelle == 'station' else state_attr('weather.forecast_home', 'dew_point')) | float }}"
+          rh: "{{ (states('sensor.ws2350_v2_38_humidity') if quelle == 'station' else state_attr('weather.forecast_home', 'humidity')) | float }}"
           wolken: "{{ states('input_number.mg_nacht_bewolkung') | float(100) }}"
           regen: "{{ states('input_number.mg_nacht_niederschlag') | float(0) }}"
           wind: "{{ states('input_number.mg_nacht_wind') | float(20) }}"
@@ -171,7 +206,7 @@ automation:
         data:
           title: "Capri wird vorklimatisiert"
           message: >-
-            Stufe {{ stufe }}: {{ t }} °C, Taupunktabstand {{ spread | round(1) }} K,
+            Stufe {{ stufe }}: {{ t }} °C{{ ' (Vorhersage)' if quelle == 'vorhersage' else '' }}, Taupunktabstand {{ spread | round(1) }} K,
             Temperatur {{ temp_option | replace('_0', ' °C') | replace('_5', ',5 °C') }}{{ ', Frontscheibe an' if stufe | int >= 2 else '' }}{{ ', Laufzeit wird verlängert' if stufe | int == 3 else '' }}.
 
       - alias: "Stufe 3: Laufzeit einmal verlängern"

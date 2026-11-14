@@ -1,6 +1,6 @@
 # =============================================================================
 # MG MGS5 EV (Firmenwagen) – Vorklimatisierung an Bürotagen
-# Stand: 2026-10-07, in HA eingespielt (Automation + Helper per ha-mcp)
+# Stand: 2026-11-14 (Wetter-Fallback), in HA eingespielt (Automation + Helper per ha-mcp)
 #   automation.auto_mg_vorklimatisierung_burotage (id: auto_mg_vorklimatisierung_buero)
 #
 # Nutzung:
@@ -14,6 +14,8 @@
 #          Niederschlag, Wind) in drei Helper schreiben.
 #   Bürobeginn − 70 min (Kalender-Trigger): Stufe 0–3 aus WS2350 + Nachtwerten,
 #          SoC-Sperre < 20 %, dann 1 bzw. 2 Klimazyklen à 10 min.
+#          Fällt die WS2350 aus, rechnet sie mit weather.forecast_home und
+#          meldet das; liefert beides nichts, kommt ein Push statt stillem Abbruch.
 #   Abfahrt = Bürobeginn − 45 min. Start: Abfahrt − 10 min (Stufe 3: − 20 min).
 #   Details und Stufentabelle: docs/mg_vorklimatisierung.md
 # =============================================================================
@@ -120,18 +122,43 @@ automation:
               - condition: template
                 value_template: "{{ 'büro' in (trigger.calendar_event.summary | lower) }}"
             sequence:
-              - alias: "Wettersensoren liefern gültige Werte"
-                condition: template
-                value_template: >-
-                  {{ has_value('sensor.ws2350_v2_38_outdoor_temperature')
-                     and has_value('sensor.ws2350_v2_38_dewpoint')
-                     and has_value('sensor.ws2350_v2_38_humidity') }}
+              # Fallback seit 2026-11-14 (siehe Capri-Package): Station, wenn alle
+              # drei Werte da und letzte Meldung < 30 min; sonst Vorhersage; sonst Push + Stop.
+              - alias: "Wetterquelle wählen (Station, sonst Vorhersage weather.forecast_home)"
+                variables:
+                  quelle: >-
+                    {% set e = ['sensor.ws2350_v2_38_outdoor_temperature', 'sensor.ws2350_v2_38_dewpoint', 'sensor.ws2350_v2_38_humidity'] %}{% set s = states.sensor.ws2350_v2_38_outdoor_temperature %}{% set w = 'weather.forecast_home' %}{% if (e | select('has_value') | list | count == 3) and s is not none and (now() - s.last_reported).total_seconds() < 1800 %}station{% elif state_attr(w, 'temperature') is number and state_attr(w, 'dew_point') is number and state_attr(w, 'humidity') is number %}vorhersage{% else %}keine{% endif %}
+
+              - alias: "Keine Wetterdaten: Bescheid geben statt still abbrechen"
+                if:
+                  - condition: template
+                    value_template: "{{ quelle == 'keine' }}"
+                then:
+                  - action: notify.mobile_app_pixel_9
+                    data:
+                      title: "MG Vorklimatisierung ausgelassen"
+                      message: >-
+                        Weder Wetterstation noch Vorhersage liefern Werte. Bitte Scheiben
+                        selbst prüfen und ggf. per MG-App starten.
+                  - stop: "Keine Wetterdaten"
+
+              - alias: "Station ausgefallen: Carsten informieren"
+                if:
+                  - condition: template
+                    value_template: "{{ quelle == 'vorhersage' }}"
+                then:
+                  - action: notify.mobile_app_pixel_9
+                    data:
+                      title: "Wetterstation liefert keine Daten"
+                      message: >-
+                        Ecowitt seit {{ as_timestamp(states.sensor.ws2350_v2_38_outdoor_temperature.last_reported, 0) | timestamp_custom('%d.%m. %H:%M') }}
+                        ohne Daten. MG-Vorklimatisierung nutzt die Vorhersage.
 
               - alias: "Messwerte lesen"
                 variables:
-                  t: "{{ states('sensor.ws2350_v2_38_outdoor_temperature') | float }}"
-                  td: "{{ states('sensor.ws2350_v2_38_dewpoint') | float }}"
-                  rh: "{{ states('sensor.ws2350_v2_38_humidity') | float }}"
+                  t: "{{ (states('sensor.ws2350_v2_38_outdoor_temperature') if quelle == 'station' else state_attr('weather.forecast_home', 'temperature')) | float }}"
+                  td: "{{ (states('sensor.ws2350_v2_38_dewpoint') if quelle == 'station' else state_attr('weather.forecast_home', 'dew_point')) | float }}"
+                  rh: "{{ (states('sensor.ws2350_v2_38_humidity') if quelle == 'station' else state_attr('weather.forecast_home', 'humidity')) | float }}"
                   wolken: "{{ states('input_number.mg_nacht_bewolkung') | float(100) }}"
                   regen: "{{ states('input_number.mg_nacht_niederschlag') | float(0) }}"
                   wind: "{{ states('input_number.mg_nacht_wind') | float(20) }}"
@@ -238,7 +265,7 @@ automation:
                           data:
                             title: "MG wird vorklimatisiert"
                             message: >-
-                              Stufe {{ stufe }}: {{ t }} °C, Taupunktabstand
+                              Stufe {{ stufe }}: {{ t }} °C{{ ' (Vorhersage)' if quelle == 'vorhersage' else '' }}, Taupunktabstand
                               {{ spread | round(1) }} K, {{ zyklen }} Zyklus/Zyklen,
                               {{ zieltemp | int }} °C.
 
