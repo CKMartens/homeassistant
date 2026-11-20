@@ -1,7 +1,9 @@
 # =============================================================================
 # Karl (MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt" + Override
-# Stand: 2026-10-22, v2 live in HA (UI-Speicher, per ha-mcp eingespielt);
-#   seit 2026-10-22 wischt Karl bei "Saugen & Wischen" und "Intensiv" erst nach dem Saugen
+# Stand: 2026-11-20, v2 live in HA (UI-Speicher, per ha-mcp eingespielt);
+#   seit 2026-10-22 wischt Karl bei "Saugen & Wischen" und "Intensiv" erst nach dem Saugen;
+#   seit 2026-11-20 beendet das Skript einen im Dock haengenden Auftrag ("paused") selbst
+#   und meldet sich, statt still abzubrechen
 #
 # Live:
 #   input_boolean.karl_automatik            Kalender-Automatik an/aus
@@ -90,9 +92,34 @@ script:
         {{ (raeume if raeume is defined and raeume else []) | map('int') | list }}
 
     sequence:
-      - condition: template
-        value_template: "{{ states(robi) in ['docked', 'idle'] }}"
-        alias: "Karl bereit (docked/idle)"
+      # Karl kann nach einem Auftrag im Dock in "paused" haengen bleiben
+      # (z. B. Moppwaesche pausiert). Dann den Rest-Auftrag erst beenden.
+      - alias: "Haengenden Auftrag im Dock beenden"
+        if:
+          - condition: template
+            value_template: >-
+              {{ is_state(robi, 'paused') and state_attr(robi, 'docked') == true }}
+        then:
+          - action: vacuum.stop
+            target:
+              entity_id: "{{ robi }}"
+          - wait_template: "{{ states(robi) in ['docked', 'idle'] }}"
+            timeout: "00:01:00"
+            continue_on_timeout: true
+
+      - alias: "Karl nicht bereit: Hinweis statt stillem Abbruch"
+        if:
+          - condition: template
+            value_template: "{{ states(robi) not in ['docked', 'idle'] }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              notification_id: karl_nicht_bereit
+              title: "Karl"
+              message: >-
+                Karl startet nicht: Zustand {{ states(robi) }}
+                ({{ state_attr(robi, 'status') }}). Bitte in der Mova-App pruefen.
+          - stop: "Karl nicht bereit"
 
       - if:
           - condition: template
