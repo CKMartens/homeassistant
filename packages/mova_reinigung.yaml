@@ -1,7 +1,10 @@
 # =============================================================================
 # Karl (MOVA Z60 Ultra Roller) – Reinigung nach Kalender "Haushalt" + Override
-# Stand: 2026-10-22, v2 live in HA (UI-Speicher, per ha-mcp eingespielt);
-#   seit 2026-10-22 wischt Karl bei "Saugen & Wischen" und "Intensiv" erst nach dem Saugen
+# Stand: 2026-11-20, v2 live in HA (UI-Speicher, per ha-mcp eingespielt);
+#   seit 2026-10-22 wischt Karl bei "Saugen & Wischen" und "Intensiv" erst nach dem Saugen;
+#   seit 2026-11-20 beendet das Skript einen im Dock haengenden Auftrag ("paused") selbst
+#   und meldet sich, statt still abzubrechen; Start per Dashboard sagt kurz
+#   "Karl fährt jetzt los" an (Feld ansage, die Automatik übergibt ansage: false)
 #
 # Live:
 #   input_boolean.karl_automatik            Kalender-Automatik an/aus
@@ -52,6 +55,13 @@ script:
                 value: saugen_wischen
               - label: "Intensiv saugen & wischen"
                 value: intensiv
+      ansage:
+        name: Ansage
+        description: "Kurze Durchsage auf den Echos beim Start (die Automatik sagt selbst schon an)"
+        required: false
+        default: true
+        selector:
+          boolean: {}
       raeume:
         name: Räume
         description: "Leer lassen = überall"
@@ -90,9 +100,34 @@ script:
         {{ (raeume if raeume is defined and raeume else []) | map('int') | list }}
 
     sequence:
-      - condition: template
-        value_template: "{{ states(robi) in ['docked', 'idle'] }}"
-        alias: "Karl bereit (docked/idle)"
+      # Karl kann nach einem Auftrag im Dock in "paused" haengen bleiben
+      # (z. B. Moppwaesche pausiert). Dann den Rest-Auftrag erst beenden.
+      - alias: "Haengenden Auftrag im Dock beenden"
+        if:
+          - condition: template
+            value_template: >-
+              {{ is_state(robi, 'paused') and state_attr(robi, 'docked') == true }}
+        then:
+          - action: vacuum.stop
+            target:
+              entity_id: "{{ robi }}"
+          - wait_template: "{{ states(robi) in ['docked', 'idle'] }}"
+            timeout: "00:01:00"
+            continue_on_timeout: true
+
+      - alias: "Karl nicht bereit: Hinweis statt stillem Abbruch"
+        if:
+          - condition: template
+            value_template: "{{ states(robi) not in ['docked', 'idle'] }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              notification_id: karl_nicht_bereit
+              title: "Karl"
+              message: >-
+                Karl startet nicht: Zustand {{ states(robi) }}
+                ({{ state_attr(robi, 'status') }}). Bitte in der Mova-App pruefen.
+          - stop: "Karl nicht bereit"
 
       - if:
           - condition: template
@@ -155,6 +190,36 @@ script:
             continue_on_error: true
 
       - delay: "00:00:05"
+
+      # kurze Ansage beim Start per Dashboard (ohne Wartezeit);
+      # Echos mit "Bitte nicht stören" oder unavailable werden übersprungen
+      - alias: "Ansage: Karl fährt jetzt los"
+        if:
+          - condition: template
+            value_template: "{{ ansage | default(true) | bool }}"
+        then:
+          - variables:
+              echos:
+                media_player.echo_wohnzimmer: switch.echo_wohnzimmer_bitte_nicht_storen_2
+                media_player.echo_schlafzimmer: switch.echo_schlafzimmer_bitte_nicht_storen_2
+                media_player.echo_dot_buro: switch.echo_dot_buro_bitte_nicht_storen_2
+              ziele: >-
+                {% set ns = namespace(z=[]) %}
+                {% for mp, dnd in echos.items() if not is_state(dnd, 'on') and not is_state(mp, 'unavailable') %}
+                {% set ns.z = ns.z + [mp] %}
+                {% endfor %}
+                {{ ns.z }}
+          - if:
+              - condition: template
+                value_template: "{{ ziele | count > 0 }}"
+            then:
+              - action: notify.alexa_media
+                data:
+                  target: "{{ ziele }}"
+                  message: "Karl fährt jetzt los."
+                  data:
+                    type: announce
+                continue_on_error: true
 
       # überall oder nur die gewählten Räume
       - if:
@@ -278,6 +343,7 @@ automation:
       - action: script.haushalt_mova_reinigung_starten
         data:
           modus: "{{ modus }}"
+          ansage: false   # Ansage kam schon 5 min vorher
 
       - action: persistent_notification.create
         data:
