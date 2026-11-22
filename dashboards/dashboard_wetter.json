@@ -151,7 +151,7 @@
             },
             {
               "type": "iframe",
-              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=rain&product=ecmwf&level=surface&lat=51.055&lon=7.059&detailLat=51.056070541830934&detailLon=7.053909301757813&marker=true&message=true",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=rain&product=ecmwf&level=surface&lat=50.195&lon=10.970&detailLat=50.195&detailLon=10.970&marker=true&message=true",
               "aspect_ratio": "100%",
               "grid_options": {
                 "columns": "full",
@@ -160,7 +160,7 @@
             },
             {
               "type": "iframe",
-              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=snowAccu&product=ecmwf&level=surface&lat=51.018&lon=7.122&detailLat=51.049&detailLon=7.086000000000013&marker=true",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=snowAccu&product=ecmwf&level=surface&lat=50.195&lon=10.970&detailLat=50.195&detailLon=10.970&marker=true",
               "aspect_ratio": "100%",
               "grid_options": {
                 "columns": "full",
@@ -176,7 +176,7 @@
             },
             {
               "type": "iframe",
-              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=thunder&product=ecmwf&level=surface&lat=51.018&lon=7.122&detailLat=51.049&detailLon=7.086000000000013&marker=true",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=thunder&product=ecmwf&level=surface&lat=50.195&lon=10.970&detailLat=50.195&detailLon=10.970&marker=true",
               "aspect_ratio": "100%",
               "grid_options": {
                 "columns": "full",

@@ -31,6 +31,6 @@ entities:
 
 Meteoalarm (EUMETNET) muss dafür nicht wieder eingerichtet werden; für Deutschland liefert es ohnehin die DWD-Warnungen, nur gröber (Landkreis statt Gemeinde).
 
-## Offen
+## Windy-Karten auf Untersiemau (2026-11-22)
 
-- Die drei Windy-Karten zeigen noch auf das Rheinland (lat ≈ 51.05, lon ≈ 7.06–7.12), nicht auf Untersiemau (lat 50.195, lon 10.970 wie im „Dashboard“).
+Die drei Windy-Karten (Regen, Schnee, Gewitter) zeigten auf das Rheinland (lat ≈ 51.05, lon ≈ 7.06–7.12). Jetzt stehen Kartenmitte und Detailpunkt auf Untersiemau, `lat=50.195&lon=10.970&detailLat=50.195&detailLon=10.970`, wie im „Dashboard“.
