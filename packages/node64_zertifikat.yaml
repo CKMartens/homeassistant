@@ -20,7 +20,8 @@
 #        node64_api_key: node64_...
 #   4. Konfiguration prüfen, HA neu starten, Automation einmal von Hand ausführen
 #      -> /config/ssl/fullchain.pem und /config/ssl/privkey.pem liegen da
-#   5. erst dann http: ssl_certificate/ssl_key eintragen (siehe Doku)
+#   5. erst dann SSL in der UI eintragen: Einstellungen > System > Netzwerk >
+#      SSL/TLS (seit HA 2026.8, YAML-http: wird ignoriert; siehe Doku)
 #   Details: docs/node64_zertifikat.md
 # =============================================================================
 

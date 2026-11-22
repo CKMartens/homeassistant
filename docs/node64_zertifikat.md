@@ -51,13 +51,11 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
    ```
    Lieber `https://` mit Namen als `http://10.10.0.11:8080`, sonst geht der API-Key im Klartext durchs LAN. Voraussetzung: das Zertifikat der Node64-UI ist gültig (ist dasselbe Wildcard-Zertifikat).
 5. Konfiguration prüfen, HA neu starten. Danach die Automation einmal ausführen und prüfen, ob `/config/ssl/fullchain.pem` und `/config/ssl/privkey.pem` da sind (Terminal: `ls -l /config/ssl`, `openssl x509 -in /config/ssl/fullchain.pem -noout -subject -enddate`).
-6. Erst dann HTTPS in HA einschalten (`configuration.yaml`):
-   ```yaml
-   http:
-     ssl_certificate: /config/ssl/fullchain.pem
-     ssl_key: /config/ssl/privkey.pem
-   ```
-   und unter Einstellungen > System > Netzwerk die lokale URL auf `https://homeassistant.home.martens-heimnetz.de:8123` setzen. Der DNS-Eintrag `homeassistant.home.martens-heimnetz.de -> 10.10.0.29` existiert schon in DNS64.
+6. Erst dann HTTPS in HA einschalten. **Seit HA 2026.8 nicht mehr per `http:` in der `configuration.yaml`**, die wird ignoriert (Reparatur `yaml_still_present_after_migration`). Stattdessen: Einstellungen > System > Netzwerk > Bereich **SSL/TLS** (ggf. Strg+F5):
+   - Zertifikat: `/config/ssl/fullchain.pem`
+   - Schlüssel: `/config/ssl/privkey.pem`
+   HA übernimmt das als Probelauf mit Zeitlimit; nach erfolgreichem Test von `https://homeassistant.home.martens-heimnetz.de:8123` in der UI bestätigen, sonst fällt es automatisch zurück. Aktive Konfiguration prüfen: WebSocket `{"type": "http/config"}` (`stable` / `pending` / `active_config_type`).
+   Danach unter Einstellungen > System > Netzwerk die lokale URL auf `https://homeassistant.home.martens-heimnetz.de:8123` setzen. Der DNS-Eintrag `homeassistant.home.martens-heimnetz.de -> 10.10.0.29` existiert schon in DNS64.
 7. Let's-Encrypt-App (`core_letsencrypt`, gestoppt) deinstallieren.
 
 ## Was sich mit HTTPS direkt in HA ändert
@@ -66,7 +64,7 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
 - Companion-Apps (Pixel 9, Pixel 9a, Tablet) auf die neue interne URL umstellen.
 - Alles, was HA lokal per HTTP anspricht, umstellen: z. B. Node64-Healthchecks auf HA, Neonplan3D, Browser-Lesezeichen. ha-mcp und andere Apps sprechen HA intern über den Supervisor an und sind nicht betroffen.
 - Nabu Casa (Fernzugriff, Alexa) läuft weiter, der Cloud-Tunnel nutzt seine eigenen Zertifikate.
-- Ist `/config/ssl/fullchain.pem` kaputt oder fehlt, startet die HTTP-Komponente nicht. Darum prüft das Skript vorher und behält `.bak`. Notfall: `http:`-Block auskommentieren (Terminal/Samba) und neu starten.
+- Ist `/config/ssl/fullchain.pem` kaputt oder fehlt, startet die HTTP-Komponente nicht. Darum prüft das Skript vorher und behält `.bak`. Notfall: Probelauf nicht bestätigen (fällt von selbst zurück) bzw. SSL/TLS in der UI wieder leeren.
 
 ## Stolperfallen
 
