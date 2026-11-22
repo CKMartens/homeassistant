@@ -19,7 +19,7 @@
 #        node64_cert_id: 2
 #        node64_api_key: node64_...
 #   4. Konfiguration prüfen, HA neu starten, Automation einmal von Hand ausführen
-#      -> /ssl/fullchain.pem und /ssl/privkey.pem liegen da
+#      -> /config/ssl/fullchain.pem und /config/ssl/privkey.pem liegen da
 #   5. erst dann http: ssl_certificate/ssl_key eintragen (siehe Doku)
 #   Details: docs/node64_zertifikat.md
 # =============================================================================
@@ -32,7 +32,7 @@ automation:
     alias: "System – Zertifikat von Node64 abholen"
     description: >-
       Holt täglich fullchain und Schlüssel von Node64 (nur bei Änderung, per
-      ETag) nach /ssl. Bei neuem Zertifikat Push aufs Pixel 9 mit Knopf
+      ETag) nach /config/ssl. Bei neuem Zertifikat Push aufs Pixel 9 mit Knopf
       "Jetzt neu starten", bei Fehler oder baldigem Ablauf eine Warnung.
     mode: single
     max_exceeded: silent
@@ -91,7 +91,7 @@ automation:
                       notification_id: node64_zertifikat
                       title: "Neues Zertifikat von Node64"
                       message: >-
-                        Abgelegt in /ssl, gültig bis {{ ergebnis.not_after }}.
+                        Abgelegt in /config/ssl, gültig bis {{ ergebnis.not_after }}.
                         Wird nach dem nächsten Neustart aktiv.
               - conditions: "{{ ergebnis.status == 'error' }}"
                 sequence:

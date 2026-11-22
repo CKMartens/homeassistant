@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Zertifikat von Node64 (kronos) abholen und nach /ssl legen.
+"""Zertifikat von Node64 (kronos) abholen und nach /config/ssl legen.
 
 Aufruf (aus HA per shell_command):
     python3 /config/node64/cert_pull.py
@@ -34,7 +34,8 @@ import urllib.request
 
 SECRETS = os.environ.get("NODE64_SECRETS", "/config/secrets.yaml")
 STATE = os.environ.get("NODE64_STATE", "/config/node64/state.json")
-SSL_DIR = os.environ.get("NODE64_SSL_DIR", "/ssl")
+# /ssl ist im HA-Core-Container read-only (HA OS), darum /config/ssl
+SSL_DIR = os.environ.get("NODE64_SSL_DIR", "/config/ssl")
 FULLCHAIN = os.path.join(SSL_DIR, "fullchain.pem")
 PRIVKEY = os.path.join(SSL_DIR, "privkey.pem")
 TIMEOUT = 20
@@ -154,6 +155,7 @@ def atomic_write(path, data, mode, backup=True):
 
 def main():
     base, cert_id, key = load_secrets()
+    os.makedirs(SSL_DIR, mode=0o700, exist_ok=True)
     state = load_state()
     have_files = os.path.exists(FULLCHAIN) and os.path.exists(PRIVKEY)
     etag = state.get("etag") if have_files else None

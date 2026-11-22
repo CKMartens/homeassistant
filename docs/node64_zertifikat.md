@@ -1,6 +1,6 @@
 # Zertifikat von Node64 in HA beziehen
 
-Stand: 2026-11-22, vorbereitet.
+Stand: 2026-11-22, eingespielt (Package + Skript), HTTPS in HA noch nicht aktiv.
 
 ## Idee
 
@@ -21,10 +21,10 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
 ## Ablauf des Skripts
 
 1. Liest `node64_url`, `node64_cert_id`, `node64_api_key` aus `/config/secrets.yaml`.
-2. Holt `fullchain` mit dem gespeicherten ETag (`/config/node64/state.json`). Fehlt eine der Dateien in `/ssl`, ohne ETag.
+2. Holt `fullchain` mit dem gespeicherten ETag (`/config/node64/state.json`). Fehlt eine der Dateien in `/config/ssl`, ohne ETag.
 3. **304**: nichts tun. **200**: `key` holen, ETag muss zum fullchain passen (sonst ein zweiter Versuch, falls Node64 genau dazwischen erneuert hat).
 4. Prüft, dass der Schlüssel zum Zertifikat passt und es nicht abgelaufen ist. Sonst wird nichts ersetzt.
-5. Schreibt atomar (Temp-Datei im selben Ordner, fsync, `os.replace`) nach `/ssl/privkey.pem` (0600) und `/ssl/fullchain.pem` (0644), die alten Dateien bleiben als `.bak`.
+5. Schreibt atomar (Temp-Datei im selben Ordner, fsync, `os.replace`) nach `/config/ssl/privkey.pem` (0600) und `/config/ssl/fullchain.pem` (0644), die alten Dateien bleiben als `.bak`.
 6. Gibt eine JSON-Zeile aus (`status` = `updated` / `unchanged` / `error`, `not_after`, `days_left`, `fingerprint`, `message`), Exit-Code immer 0.
 
 ## Automation
@@ -50,12 +50,12 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
    node64_api_key: node64_...
    ```
    Lieber `https://` mit Namen als `http://10.10.0.11:8080`, sonst geht der API-Key im Klartext durchs LAN. Voraussetzung: das Zertifikat der Node64-UI ist gültig (ist dasselbe Wildcard-Zertifikat).
-5. Konfiguration prüfen, HA neu starten. Danach die Automation einmal ausführen und prüfen, ob `/ssl/fullchain.pem` und `/ssl/privkey.pem` da sind (Terminal: `ls -l /ssl`, `openssl x509 -in /ssl/fullchain.pem -noout -subject -enddate`).
+5. Konfiguration prüfen, HA neu starten. Danach die Automation einmal ausführen und prüfen, ob `/config/ssl/fullchain.pem` und `/config/ssl/privkey.pem` da sind (Terminal: `ls -l /config/ssl`, `openssl x509 -in /config/ssl/fullchain.pem -noout -subject -enddate`).
 6. Erst dann HTTPS in HA einschalten (`configuration.yaml`):
    ```yaml
    http:
-     ssl_certificate: /ssl/fullchain.pem
-     ssl_key: /ssl/privkey.pem
+     ssl_certificate: /config/ssl/fullchain.pem
+     ssl_key: /config/ssl/privkey.pem
    ```
    und unter Einstellungen > System > Netzwerk die lokale URL auf `https://homeassistant.home.martens-heimnetz.de:8123` setzen. Der DNS-Eintrag `homeassistant.home.martens-heimnetz.de -> 10.10.0.29` existiert schon in DNS64.
 7. Let's-Encrypt-App (`core_letsencrypt`, gestoppt) deinstallieren.
@@ -66,9 +66,11 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
 - Companion-Apps (Pixel 9, Pixel 9a, Tablet) auf die neue interne URL umstellen.
 - Alles, was HA lokal per HTTP anspricht, umstellen: z. B. Node64-Healthchecks auf HA, Neonplan3D, Browser-Lesezeichen. ha-mcp und andere Apps sprechen HA intern über den Supervisor an und sind nicht betroffen.
 - Nabu Casa (Fernzugriff, Alexa) läuft weiter, der Cloud-Tunnel nutzt seine eigenen Zertifikate.
-- Ist `/ssl/fullchain.pem` kaputt oder fehlt, startet die HTTP-Komponente nicht. Darum prüft das Skript vorher und behält `.bak`. Notfall: `http:`-Block auskommentieren (Terminal/Samba) und neu starten.
+- Ist `/config/ssl/fullchain.pem` kaputt oder fehlt, startet die HTTP-Komponente nicht. Darum prüft das Skript vorher und behält `.bak`. Notfall: `http:`-Block auskommentieren (Terminal/Samba) und neu starten.
 
 ## Stolperfallen
+
+- `/ssl` ist im HA-Core-Container unter HA OS **read-only** (erster Lauf am 2026-11-22: `Errno 30 Read-only file system`). Nur Apps wie die Let's-Encrypt-App dürfen dort schreiben. Darum liegen die Dateien unter `/config/ssl` (Ordner 0700, Schlüssel 0600). Folge: der Schlüssel ist in den HA-Backups enthalten (Nabu-Casa-Backups sind verschlüsselt) und für Studio Code Server/Samba lesbar.
 
 - Das Wildcard gilt für `*.home.martens-heimnetz.de`, **nicht** für `home.martens-heimnetz.de` selbst und nicht für Namen eine Ebene tiefer.
 - Node64 braucht für die Erneuerung einen funktionierenden DNS-Resolver. Am 2026-11-22 schlug ein manueller Erneuerungsversuch fehl, weil kronos `acme-v02.api.letsencrypt.org` über 10.10.0.200 auflösen wollte (Timeout). Das ist ein Homelab-Thema, die Warnung „läuft bald ab“ fängt es in HA auf.
