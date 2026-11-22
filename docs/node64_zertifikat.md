@@ -56,7 +56,7 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
    - Schlüssel: `/config/ssl/privkey.pem`
    HA übernimmt das als Probelauf mit Zeitlimit; nach erfolgreichem Test von `https://homeassistant.home.martens-heimnetz.de:8123` in der UI bestätigen, sonst fällt es automatisch zurück. Aktive Konfiguration prüfen: WebSocket `{"type": "http/config"}` (`stable` / `pending` / `active_config_type`).
    Danach unter Einstellungen > System > Netzwerk die lokale URL auf `https://homeassistant.home.martens-heimnetz.de:8123` setzen. Der DNS-Eintrag `homeassistant.home.martens-heimnetz.de -> 10.10.0.29` existiert schon in DNS64.
-7. Let's-Encrypt-App (`core_letsencrypt`, gestoppt) deinstallieren.
+7. Let's-Encrypt-App (`core_letsencrypt`) deinstalliert am 2026-11-22.
 
 ## Was sich mit HTTPS direkt in HA ändert
 
