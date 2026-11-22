@@ -1,6 +1,6 @@
 # Zertifikat von Node64 in HA beziehen
 
-Stand: 2026-11-22, live: Package + Skript eingespielt, HTTPS in HA aktiv seit 2026-11-22 08:13 (erstes Zertifikat bis 2027-02-20).
+Stand: 2026-11-22, live: Package + Skript eingespielt, erstes Zertifikat bis 2027-02-20 abgeholt. HTTPS in HA: wird über die UI eingerichtet.
 
 ## Idee
 
