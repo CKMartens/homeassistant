@@ -1,0 +1,289 @@
+{
+  "kiosk_mode": {
+    "hide_sidebar": true,
+    "hide_header": false,
+    "mobile_settings": {
+      "hide_header": true
+    },
+    "admin_settings": {
+      "hide_sidebar": false,
+      "hide_header": false
+    },
+    "non_admin_settings": {
+      "hide_sidebar": true,
+      "hide_header": true
+    }
+  },
+  "views": [
+    {
+      "title": "Klima",
+      "path": "wetter",
+      "icon": "mdi:white-balance-sunny",
+      "subview": true,
+      "type": "sections",
+      "sections": [
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "graph": "line",
+              "type": "sensor",
+              "detail": 2,
+              "entity": "sensor.ws2350_v2_38_outdoor_temperature",
+              "name": "Außentemperatur reell",
+              "grid_options": {
+                "columns": 6,
+                "rows": 2
+              }
+            },
+            {
+              "graph": "line",
+              "type": "sensor",
+              "detail": 2,
+              "entity": "sensor.ws2350_v2_38_humidity",
+              "name": "Luftfeuchtigkeit reell",
+              "grid_options": {
+                "columns": 6,
+                "rows": 2
+              }
+            },
+            {
+              "type": "custom:weather-chart-card",
+              "entity": "weather.openweathermap",
+              "show_main": true,
+              "show_temperature": true,
+              "show_current_condition": true,
+              "show_attributes": true,
+              "show_time": false,
+              "show_day": false,
+              "show_date": false,
+              "show_humidity": true,
+              "show_pressure": true,
+              "show_wind_direction": true,
+              "show_wind_speed": true,
+              "show_sun": true,
+              "show_feels_like": true,
+              "icons_size": "40",
+              "animated_icons": true,
+              "icon_style": "style1",
+              "forecast": {
+                "precipitation_type": "rainfall",
+                "labels_font_size": "11",
+                "precip_bar_size": "100",
+                "style": "style2",
+                "show_wind_forecast": true,
+                "condition_icons": true,
+                "round_temp": false,
+                "type": "daily",
+                "use_12hour_format": false
+              },
+              "units": {
+                "pressure": "",
+                "speed": ""
+              },
+              "locale": "de",
+              "title": "Aktuelles Wetter",
+              "show_last_changed": true,
+              "use_12hour_format": false,
+              "description": "sensor.openweathermap_condition",
+              "current_temp_size": "28",
+              "feels_like": "sensor.openweathermap_feels_like_temperature"
+            },
+            {
+              "type": "custom:weather-chart-card",
+              "entity": "weather.openweathermap",
+              "show_main": false,
+              "show_temperature": false,
+              "show_current_condition": false,
+              "show_attributes": false,
+              "show_time": false,
+              "show_day": false,
+              "show_date": false,
+              "show_humidity": false,
+              "show_pressure": false,
+              "show_wind_direction": false,
+              "show_wind_speed": false,
+              "show_sun": false,
+              "show_feels_like": false,
+              "icons_size": 25,
+              "animated_icons": true,
+              "icon_style": "style1",
+              "forecast": {
+                "precipitation_type": "rainfall",
+                "labels_font_size": "11",
+                "precip_bar_size": "100",
+                "style": "style2",
+                "show_wind_forecast": true,
+                "condition_icons": true,
+                "round_temp": true,
+                "type": "hourly",
+                "use_12hour_format": false,
+                "disable_animation": false,
+                "show_probability": true,
+                "number_of_forecasts": "6"
+              },
+              "units": {
+                "pressure": "",
+                "speed": ""
+              },
+              "locale": "de",
+              "use_12hour_format": false,
+              "show_wind_gust_speed": false,
+              "show_visibility": false,
+              "show_last_changed": false
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "custom:meteoalarm-card",
+              "integration": "dwd",
+              "entities": [
+                {
+                  "entity": "sensor.gemeinde_untersiemau_aktuelle_warnstufe"
+                },
+                {
+                  "entity": "sensor.gemeinde_untersiemau_vorwarnstufe"
+                }
+              ]
+            },
+            {
+              "type": "iframe",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=rain&product=ecmwf&level=surface&lat=51.055&lon=7.059&detailLat=51.056070541830934&detailLon=7.053909301757813&marker=true&message=true",
+              "aspect_ratio": "100%",
+              "grid_options": {
+                "columns": "full",
+                "rows": 8
+              }
+            },
+            {
+              "type": "iframe",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=snowAccu&product=ecmwf&level=surface&lat=51.018&lon=7.122&detailLat=51.049&detailLon=7.086000000000013&marker=true",
+              "aspect_ratio": "100%",
+              "grid_options": {
+                "columns": "full",
+                "rows": 8
+              },
+              "visibility": [
+                {
+                  "condition": "state",
+                  "entity": "weather.openweathermap",
+                  "state": "snowy"
+                }
+              ]
+            },
+            {
+              "type": "iframe",
+              "url": "https://embed.windy.com/embed.html?type=map&location=coordinates&metricRain=default&metricTemp=default&metricWind=default&zoom=8&overlay=thunder&product=ecmwf&level=surface&lat=51.018&lon=7.122&detailLat=51.049&detailLon=7.086000000000013&marker=true",
+              "aspect_ratio": "100%",
+              "grid_options": {
+                "columns": "full",
+                "rows": 8
+              },
+              "visibility": [
+                {
+                  "condition": "or",
+                  "conditions": [
+                    {
+                      "condition": "state",
+                      "entity": "weather.openweathermap",
+                      "state": "lightning-rainy"
+                    },
+                    {
+                      "condition": "state",
+                      "entity": "weather.openweathermap",
+                      "state": "lightning"
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "grid",
+          "cards": [
+            {
+              "type": "tile",
+              "entity": "sensor.ws2350_v2_38_rain_rate",
+              "name": "Letzte Regenmenge",
+              "vertical": false,
+              "features_position": "bottom"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.ws2350_v2_38_daily_rain",
+              "name": "Regenmenge heute",
+              "vertical": false,
+              "features_position": "bottom"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.ws2350_v2_38_monthly_rain",
+              "name": "Regenmenge Monat",
+              "vertical": false,
+              "features_position": "bottom"
+            },
+            {
+              "type": "tile",
+              "entity": "sensor.ws2350_v2_38_yearly_rain",
+              "name": "Regenmenge Jahr",
+              "vertical": false,
+              "features_position": "bottom"
+            },
+            {
+              "graph": "line",
+              "type": "sensor",
+              "detail": 1,
+              "entity": "sensor.ws2350_v2_38_solar_radiation",
+              "name": {
+                "type": "entity"
+              }
+            },
+            {
+              "graph": "line",
+              "type": "sensor",
+              "detail": 1,
+              "entity": "sensor.ws2350_v2_38_dewpoint",
+              "name": {
+                "type": "entity"
+              }
+            },
+            {
+              "graph": "line",
+              "type": "sensor",
+              "detail": 1,
+              "entity": "sensor.windgeschwindigkeit_10min_durchschnitt",
+              "name": {
+                "type": "entity"
+              }
+            },
+            {
+              "graph": "none",
+              "type": "sensor",
+              "detail": 1,
+              "entity": "sensor.windrichtung_10min_durchschnitt",
+              "name": {
+                "type": "entity"
+              }
+            },
+            {
+              "graph": "line",
+              "type": "sensor",
+              "entity": "sensor.coburg_itz_pegelstand",
+              "detail": 1
+            },
+            {
+              "graph": "line",
+              "type": "sensor",
+              "entity": "sensor.schenkenau_itz_pegelstand",
+              "detail": 1
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
