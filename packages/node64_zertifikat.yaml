@@ -1,0 +1,121 @@
+# =============================================================================
+# System – Zertifikat von Node64 abholen
+# Stand: 2026-11-22, vorbereitet (noch nicht eingespielt)
+#   shell_command.node64_zertifikat_abholen
+#   automation.system_node64_zertifikat_abholen (id: system_node64_zertifikat_abholen)
+#
+# Warum:
+#   Node64 (kronos, 10.10.0.11) holt das Let's-Encrypt-Wildcard-Zertifikat
+#   *.home.martens-heimnetz.de per DNS-01 (Hetzner) und erneuert es selbst.
+#   HA soll es nur noch abholen, die Let's-Encrypt-App in HA fällt weg.
+#
+# Einbau:
+#   1. scripts/node64/cert_pull.py aus dem Repo nach /config/node64/cert_pull.py
+#   2. diese Datei nach /config/packages/node64_zertifikat.yaml
+#      (configuration.yaml: homeassistant: packages: !include_dir_named packages)
+#      shell_command geht nicht über die UI, darum hier als Package.
+#   3. /config/secrets.yaml ergänzen (Key NIE in Chat oder Repo):
+#        node64_url: https://kronos.home.martens-heimnetz.de:8080
+#        node64_cert_id: 2
+#        node64_api_key: node64_...
+#   4. Konfiguration prüfen, HA neu starten, Automation einmal von Hand ausführen
+#      -> /ssl/fullchain.pem und /ssl/privkey.pem liegen da
+#   5. erst dann http: ssl_certificate/ssl_key eintragen (siehe Doku)
+#   Details: docs/node64_zertifikat.md
+# =============================================================================
+
+shell_command:
+  node64_zertifikat_abholen: "python3 /config/node64/cert_pull.py"
+
+automation:
+  - id: system_node64_zertifikat_abholen
+    alias: "System – Zertifikat von Node64 abholen"
+    description: >-
+      Holt täglich fullchain und Schlüssel von Node64 (nur bei Änderung, per
+      ETag) nach /ssl. Bei neuem Zertifikat Push aufs Pixel 9 mit Knopf
+      "Jetzt neu starten", bei Fehler oder baldigem Ablauf eine Warnung.
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: time
+        at: "09:30:00"
+        id: abholen
+      - trigger: homeassistant
+        event: start
+        id: abholen
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: NODE64_CERT_RESTART
+        id: neustart
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: neustart
+            sequence:
+              - action: homeassistant.check_config
+              - action: homeassistant.restart
+        default:
+          - delay: "00:00:30"
+          - action: shell_command.node64_zertifikat_abholen
+            response_variable: antwort
+            continue_on_error: true
+          - variables:
+              ergebnis: >-
+                {% if antwort is defined and antwort.returncode | default(1) == 0 %}
+                  {{ antwort.stdout | from_json }}
+                {% else %}
+                  {{ {'status': 'error',
+                      'message': (antwort.stderr if antwort is defined else 'shell_command nicht ausgeführt')
+                                 | default('unbekannt') | string | truncate(200)} }}
+                {% endif %}
+              tage: "{{ ergebnis.days_left | default(none) }}"
+          - choose:
+              - conditions: "{{ ergebnis.status == 'updated' }}"
+                sequence:
+                  - action: notify.mobile_app_pixel_9
+                    data:
+                      title: "Neues Zertifikat für HA"
+                      message: >-
+                        Node64 hat ein neues Zertifikat geliefert (gültig bis
+                        {{ as_timestamp(ergebnis.not_after) | timestamp_custom('%d.%m.%Y') }}).
+                        Es greift nach einem HA-Neustart.
+                      data:
+                        tag: node64_zertifikat
+                        actions:
+                          - action: NODE64_CERT_RESTART
+                            title: "Jetzt neu starten"
+                  - action: persistent_notification.create
+                    data:
+                      notification_id: node64_zertifikat
+                      title: "Neues Zertifikat von Node64"
+                      message: >-
+                        Abgelegt in /ssl, gültig bis {{ ergebnis.not_after }}.
+                        Wird nach dem nächsten Neustart aktiv.
+              - conditions: "{{ ergebnis.status == 'error' }}"
+                sequence:
+                  - action: notify.mobile_app_pixel_9
+                    data:
+                      title: "Zertifikat-Abruf von Node64 fehlgeschlagen"
+                      message: "{{ ergebnis.message }}"
+                      data:
+                        tag: node64_zertifikat
+                  - action: persistent_notification.create
+                    data:
+                      notification_id: node64_zertifikat
+                      title: "Zertifikat-Abruf von Node64 fehlgeschlagen"
+                      message: "{{ ergebnis.message }}"
+          # Sicherheitsnetz: erneuert Node64 nicht, merkt HA es trotzdem
+          - if:
+              - condition: template
+                value_template: "{{ tage not in [none, ''] and tage | int(99) < 21 }}"
+            then:
+              - action: notify.mobile_app_pixel_9
+                data:
+                  title: "HA-Zertifikat läuft bald ab"
+                  message: >-
+                    Noch {{ tage }} Tage. Node64 hat offenbar nicht erneuert,
+                    bitte Zertifikate in Node64 prüfen.
+                  data:
+                    tag: node64_zertifikat_ablauf
