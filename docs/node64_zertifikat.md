@@ -29,7 +29,7 @@ In HA übernimmt das `scripts/node64/cert_pull.py` (liegt in HA unter `/config/n
 
 ## Automation
 
-`automation.system_node64_zertifikat_abholen` läuft täglich 09:30 und nach jedem HA-Start:
+`automation.system_zertifikat_von_node64_abholen` läuft täglich 09:30 und nach jedem HA-Start:
 
 - **updated**: Push aufs Pixel 9 mit Knopf „Jetzt neu starten“ (prüft erst die Konfiguration, dann `homeassistant.restart`) und eine HA-Benachrichtigung. HA lädt Zertifikate nur beim Start, darum kein automatischer Neustart.
 - **unchanged**: still.

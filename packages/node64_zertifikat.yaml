@@ -2,7 +2,7 @@
 # System – Zertifikat von Node64 abholen
 # Stand: 2026-11-22, vorbereitet (noch nicht eingespielt)
 #   shell_command.node64_zertifikat_abholen
-#   automation.system_node64_zertifikat_abholen (id: system_node64_zertifikat_abholen)
+#   automation.system_zertifikat_von_node64_abholen (id: system_node64_zertifikat_abholen)
 #
 # Warum:
 #   Node64 (kronos, 10.10.0.11) holt das Let's-Encrypt-Wildcard-Zertifikat
