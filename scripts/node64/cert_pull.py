@@ -32,9 +32,9 @@ import tempfile
 import urllib.error
 import urllib.request
 
-SECRETS = "/config/secrets.yaml"
-STATE = "/config/node64/state.json"
-SSL_DIR = "/ssl"
+SECRETS = os.environ.get("NODE64_SECRETS", "/config/secrets.yaml")
+STATE = os.environ.get("NODE64_STATE", "/config/node64/state.json")
+SSL_DIR = os.environ.get("NODE64_SSL_DIR", "/ssl")
 FULLCHAIN = os.path.join(SSL_DIR, "fullchain.pem")
 PRIVKEY = os.path.join(SSL_DIR, "privkey.pem")
 TIMEOUT = 20
