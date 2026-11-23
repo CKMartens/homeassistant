@@ -1,0 +1,183 @@
+# =============================================================================
+# Hausgeräte – Fertig-Meldung absichern (Waschmaschine, Trockner)
+# Stand: 2026-11-23, live in HA als UI-Automationen:
+#   automation.waschmaschine_fertig_meldung_absichern (UI-id 1795419451017)
+#   automation.trockner_fertig_meldung_absichern
+#
+# Nutzung: In der UI eine neue Automation anlegen, "In YAML bearbeiten" und den
+#   jeweiligen Block (ohne das führende "- ") einfügen. NICHT zusätzlich nach
+#   /config/packages/ legen, sonst laufen beide Automationen doppelt.
+#
+# Warum: Die Fertig-Meldung kommt aus dem Blueprint Blackshome/appliance-notifications
+#   (automation.waschmaschine_notification, automation.waschetrockner_notification).
+#   Der Blueprint hält einen laufenden Durchgang vom Start bis zum Ende. Ein HA-Neustart
+#   oder das Speichern der Automation bricht diesen Durchgang ab, und ein neuer startet
+#   erst, wenn die Leistung wieder über die Schwelle steigt. Endet der Gang genau dann,
+#   kommt keine Meldung (Vorfall 2026-11-23 um 08:05, Neustart für alexa_media 5.22.1).
+#
+# Was sie tun: Alle 5 min und nach dem HA-Start prüfen, ob das Gerät noch als laufend
+#   markiert ist (input_boolean.hausgerate_*_fertig = on), der Blueprint gerade keinen
+#   Durchgang hat (Attribut current = 0) und die Leistung unter 15 W liegt. Bleibt sie
+#   dann 10 min unten, melden sie wie der Blueprint (Pixel 9, Pixel 9a, Echo Wohnzimmer,
+#   nur 08:00–19:00) und setzen Status, Laufzeit und input_boolean zurück. Das
+#   input_boolean auf off startet wie gewohnt "Hausgeräte – Nachlaufzeit Abschaltung".
+# =============================================================================
+automation:
+  - id: "1795419451017"
+    alias: Waschmaschine – Fertig-Meldung absichern
+    description: >-
+      Fängt das Ende eines Waschgangs ab, wenn die Blueprint-Automation
+      „Waschmaschine Notification“ durch einen HA-Neustart oder ein Neuladen ihren
+      laufenden Durchgang verloren hat.
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: homeassistant
+        event: start
+      - trigger: time_pattern
+        minutes: /5
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hausgerate_waschmaschine_fertig
+        state: "on"
+      - condition: state
+        entity_id: automation.waschmaschine_notification
+        attribute: current
+        state: 0
+      - condition: numeric_state
+        entity_id: sensor.waschmaschine_energy_power
+        below: 15
+    actions:
+      - alias: 10 Minuten prüfen, ob die Maschine doch weiterläuft
+        wait_for_trigger:
+          - trigger: numeric_state
+            entity_id: sensor.waschmaschine_energy_power
+            above: 15
+        timeout:
+          minutes: 10
+        continue_on_timeout: true
+      - alias: Abbrechen, wenn sie weiterläuft oder die Blueprint-Automation übernommen hat
+        condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ wait.trigger is none }}"
+          - condition: state
+            entity_id: input_boolean.hausgerate_waschmaschine_fertig
+            state: "on"
+          - condition: state
+            entity_id: automation.waschmaschine_notification
+            attribute: current
+            state: 0
+      - alias: Melden, aber nur zwischen 08:00 und 19:00 (wie in der Blueprint-Automation)
+        if:
+          - condition: time
+            after: "08:00:00"
+            before: "19:00:00"
+        then:
+          - action: notify.mobile_app_pixel_9
+            continue_on_error: true
+            data:
+              title: Waschmaschine fertig
+              message: Entschuldigung das ich störe, aber die Waschmaschine ist fertig!
+          - action: notify.mobile_app_pixel_9a
+            continue_on_error: true
+            data:
+              title: Waschmaschine fertig
+              message: Entschuldigung das ich störe, aber die Waschmaschine ist fertig!
+          - action: notify.alexa_media_echo_wohnzimmer
+            continue_on_error: true
+            data:
+              title: Waschmaschine fertig
+              message: Entschuldigung das ich störe, aber die Waschmaschine ist fertig!
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.waschmaschine_last_runtime
+        data:
+          datetime: "{{ now() }}"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.waschmaschine_status
+        data:
+          option: Waschmaschine ausgeschaltet
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.hausgerate_waschmaschine_fertig
+
+  - alias: Trockner – Fertig-Meldung absichern
+    description: >-
+      Fängt das Ende eines Trockengangs ab, wenn die Blueprint-Automation
+      „Wäschetrockner Notification“ durch einen HA-Neustart oder ein Neuladen ihren
+      laufenden Durchgang verloren hat.
+    mode: single
+    max_exceeded: silent
+    triggers:
+      - trigger: homeassistant
+        event: start
+      - trigger: time_pattern
+        minutes: /5
+    conditions:
+      - condition: state
+        entity_id: input_boolean.hausgerate_waschetrockner_fertig
+        state: "on"
+      - condition: state
+        entity_id: automation.waschetrockner_notification
+        attribute: current
+        state: 0
+      - condition: numeric_state
+        entity_id: sensor.trockner_energy_power
+        below: 15
+    actions:
+      - alias: 10 Minuten prüfen, ob der Trockner doch weiterläuft
+        wait_for_trigger:
+          - trigger: numeric_state
+            entity_id: sensor.trockner_energy_power
+            above: 15
+        timeout:
+          minutes: 10
+        continue_on_timeout: true
+      - alias: Abbrechen, wenn er weiterläuft oder die Blueprint-Automation übernommen hat
+        condition: and
+        conditions:
+          - condition: template
+            value_template: "{{ wait.trigger is none }}"
+          - condition: state
+            entity_id: input_boolean.hausgerate_waschetrockner_fertig
+            state: "on"
+          - condition: state
+            entity_id: automation.waschetrockner_notification
+            attribute: current
+            state: 0
+      - alias: Melden, aber nur zwischen 08:00 und 19:00 (wie in der Blueprint-Automation)
+        if:
+          - condition: time
+            after: "08:00:00"
+            before: "19:00:00"
+        then:
+          - action: notify.mobile_app_pixel_9
+            continue_on_error: true
+            data:
+              title: Trockner
+              message: Entschuldigung das ich störe, aber der Trockner ist fertig!
+          - action: notify.mobile_app_pixel_9a
+            continue_on_error: true
+            data:
+              title: Trockner
+              message: Entschuldigung das ich störe, aber der Trockner ist fertig!
+          - action: notify.alexa_media_echo_wohnzimmer
+            continue_on_error: true
+            data:
+              title: Wäschetrockner fertig!
+              message: Entschuldige, dass ich störe, aber der Wäschetrockner ist fertig!
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.tockner_last_runtime
+        data:
+          datetime: "{{ now() }}"
+      - action: input_select.select_option
+        target:
+          entity_id: input_select.trockner_status
+        data:
+          option: Trockner ausgeschaltet
+      - action: input_boolean.turn_off
+        target:
+          entity_id: input_boolean.hausgerate_waschetrockner_fertig
