@@ -27,6 +27,23 @@ Seit 2026-11-23 steht dort das aktuelle Pixel 9 (`bc5a022328b480fe2af27b3b557585
 Prüfen: In der Automation „In YAML bearbeiten“, jede ID unter `end_notify_device` muss in
 **Einstellungen → Geräte** als Handy auftauchen.
 
+Dasselbe gilt für die zwei Blueprints von ArnaudFeld (Eingabe `mobile_app_device`):
+`automation.update_notifications_alle_updates_manueller_start` und
+`automation.batteriestand_erkennung_benachrichtigung`. Sie bauen den Dienstnamen aus dem
+Gerätenamen (`notify.mobile_app_<name>`). Fehlt das Gerät, wird daraus `notify.mobile_app_none`
+und HA meldet unter **Einstellungen → Reparaturen** „Aktion nicht gefunden“.
+
+Verlauf nach dem Plattendefekt (Restore am 2026-11-23 aus einem Backup von vor dem Fix):
+
+| Zeit | Was passiert |
+|---|---|
+| 2026-11-23 ~14:00 | Pixel-9-ID in allen vier Automationen neu gesetzt |
+| 2026-11-23 19:42 | Update-Meldung (HA Housekeeper) scheitert trotzdem mit `notify.mobile_app_none`: das Pixel 9 war nach dem Restore noch nicht wieder angemeldet |
+| 2026-11-24 02:46 | Companion App auf dem Pixel 9 neu angemeldet. HA stellt das Gerät mit derselben ID wieder her (`bc5a0223…`), `notify.mobile_app_pixel_9` ist wieder da. Keine Änderung an den Automationen nötig. |
+
+Kurztest: In **Entwicklerwerkzeuge → Template**
+`{{ device_attr('bc5a022328b480fe2af27b3b55758509', 'name') }}` muss `Pixel 9` liefern.
+
 ## Stolperfalle 2: HA-Neustart mitten im Gang
 
 Der Blueprint hält vom Start bis zum Ende einen laufenden Durchgang (`mode: single`).

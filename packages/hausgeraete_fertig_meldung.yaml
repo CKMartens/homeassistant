@@ -1,8 +1,9 @@
 # =============================================================================
 # Hausgeräte – Fertig-Meldung absichern (Waschmaschine, Trockner)
-# Stand: 2026-11-23, live in HA als UI-Automationen:
-#   automation.waschmaschine_fertig_meldung_absichern (UI-id 1795419451017)
-#   automation.trockner_fertig_meldung_absichern
+# Stand: 2026-11-24, live in HA als UI-Automationen (nach dem Restore vom 2026-11-23
+#   neu angelegt, daher neue UI-ids):
+#   automation.waschmaschine_fertig_meldung_absichern (UI-id 1795438651776)
+#   automation.trockner_fertig_meldung_absichern (UI-id 1795438622417)
 #
 # Nutzung: In der UI eine neue Automation anlegen, "In YAML bearbeiten" und den
 #   jeweiligen Block (ohne das führende "- ") einfügen. NICHT zusätzlich nach
@@ -23,7 +24,7 @@
 #   input_boolean auf off startet wie gewohnt "Hausgeräte – Nachlaufzeit Abschaltung".
 # =============================================================================
 automation:
-  - id: "1795419451017"
+  - id: "1795438651776"
     alias: Waschmaschine – Fertig-Meldung absichern
     description: >-
       Fängt das Ende eines Waschgangs ab, wenn die Blueprint-Automation
@@ -103,7 +104,8 @@ automation:
         target:
           entity_id: input_boolean.hausgerate_waschmaschine_fertig
 
-  - alias: Trockner – Fertig-Meldung absichern
+  - id: "1795438622417"
+    alias: Trockner – Fertig-Meldung absichern
     description: >-
       Fängt das Ende eines Trockengangs ab, wenn die Blueprint-Automation
       „Wäschetrockner Notification“ durch einen HA-Neustart oder ein Neuladen ihren
