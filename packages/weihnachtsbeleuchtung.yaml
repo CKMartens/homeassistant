@@ -111,3 +111,54 @@ automation:
             target:
               label_id: weihnachtsbeleuchtung
             continue_on_error: true
+
+  # Erinnerung Saisonende (UI-id weihnachtsbeleuchtung_erinnerung_saisonende):
+  # ab 15.01.2027 täglich 09:00 Push aufs Pixel 9, solange die Automatik an ist.
+  # Der Knopf "Automatik ausschalten" schaltet den input_boolean direkt aus.
+  - id: weihnachtsbeleuchtung_erinnerung_saisonende
+    alias: Weihnachtsbeleuchtung – Erinnerung Saisonende
+    description: >-
+      Erinnert Carsten ab dem 15.01.2027 täglich um 09:00 per Push daran, die
+      Weihnachtsbeleuchtungs-Automatik abzuschalten, solange sie noch an ist. Der
+      Knopf in der Meldung schaltet die Automatik direkt aus.
+    mode: single
+    triggers:
+      - trigger: time
+        at: "09:00:00"
+        id: erinnerung
+      - trigger: event
+        event_type: mobile_app_notification_action
+        event_data:
+          action: WEIHNACHTSBELEUCHTUNG_AUS
+        id: knopf
+    conditions:
+      - condition: state
+        entity_id: input_boolean.weihnachtsbeleuchtung_automatik
+        state: "on"
+    actions:
+      - choose:
+          - conditions:
+              - condition: trigger
+                id: knopf
+            sequence:
+              - action: input_boolean.turn_off
+                target:
+                  entity_id: input_boolean.weihnachtsbeleuchtung_automatik
+          - conditions:
+              - condition: trigger
+                id: erinnerung
+              - alias: Ab 15.01.2027
+                condition: template
+                value_template: "{{ now().date() >= as_datetime('2027-01-15').date() }}"
+            sequence:
+              - action: notify.mobile_app_pixel_9
+                data:
+                  title: Weihnachtsbeleuchtung
+                  message: >-
+                    Mitte Januar: Soll die Weihnachtsbeleuchtungs-Automatik aus? (Die
+                    Deko schaltet dann nicht mehr nach Zeitplan.)
+                  data:
+                    tag: weihnachtsbeleuchtung_saisonende
+                    actions:
+                      - action: WEIHNACHTSBELEUCHTUNG_AUS
+                        title: Automatik ausschalten
