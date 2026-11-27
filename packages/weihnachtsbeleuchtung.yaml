@@ -1,0 +1,113 @@
+# =============================================================================
+# Weihnachtsbeleuchtung – Zeitplan
+# Stand: 2026-11-27, live in HA als UI-Automation und UI-Helfer:
+#   automation.weihnachtsbeleuchtung_zeitplan (UI-id weihnachtsbeleuchtung_zeitplan)
+#   input_boolean.weihnachtsbeleuchtung_automatik (UI-Helfer, Schalter für die Saison)
+#   Label "Weihnachtsbeleuchtung" (label_id weihnachtsbeleuchtung)
+#
+# Nutzung: In der UI eine neue Automation anlegen, "In YAML bearbeiten" und den
+#   Block unter automation: (ohne das führende "- ") einfügen. Helfer und Label in
+#   der UI anlegen. NICHT zusätzlich nach /config/packages/ legen, sonst läuft die
+#   Automation doppelt.
+#
+# Was geschaltet wird: alles mit dem Label "Weihnachtsbeleuchtung", derzeit
+#   switch.kuche_weihnachtsdeko_fenster, switch.essbereich_weihnachtsdeko_fenster
+#   (Z2M-Steckdosen) und light.h702a (Govee Gartenlicht). Weitere Lichter oder
+#   Steckdosen: nur das Label vergeben, an der Automation ändert sich nichts.
+#   homeassistant.turn_on/turn_off schaltet light und switch gemischt.
+#   Den Automatik-Schalter NICHT labeln, sonst schaltet die Automation ihn selbst aus.
+#
+# Zeitplan:
+#   Werktag (binary_sensor.workday_sensor = on, Bayern, Feiertage ausgenommen):
+#     an 05:00 bis Sonnenaufgang + 1 h, an Sonnenuntergang − 2 h bis 22:00
+#   Wochenende und Feiertag (workday = off): an 05:00 bis 22:00
+#
+# Randfälle: Die Logik prüft immer "Uhrzeit 05:00–22:00 UND (frei ODER vor
+#   Sonnenaufgang+1h ODER nach Sonnenuntergang−2h)". Liegt Sonnenaufgang+1h vor
+#   05:00, ist das Morgenfenster leer und fällt einfach aus; liegt
+#   Sonnenuntergang−2h nach 22:00, entfällt das Abendfenster. Kein Doppelschalten.
+#
+# Neustart: Jeder Trigger rechnet nur den Soll-Zustand neu aus und setzt ihn. Nach
+#   dem HA-Start wartet sie 1 min (Zigbee2MQTT/Govee), dann holt sie verpasste
+#   Schaltzeiten nach. Beim Einschalten der Automatik ebenso. Bewusst kein Trigger
+#   auf den Workday-Wechsel um Mitternacht, damit ein Handschalten nach 22:00 nicht
+#   um 00:00 überfahren wird.
+# =============================================================================
+input_boolean:
+  weihnachtsbeleuchtung_automatik:
+    name: Weihnachtsbeleuchtung Automatik
+    icon: mdi:pine-tree
+
+automation:
+  - id: weihnachtsbeleuchtung_zeitplan
+    alias: Weihnachtsbeleuchtung – Zeitplan
+    description: >-
+      Schaltet alles mit dem Label „Weihnachtsbeleuchtung“ nach Zeitplan: an
+      Werktagen 05:00 bis Sonnenaufgang+1h und Sonnenuntergang−2h bis 22:00, an
+      Wochenenden und Feiertagen (Workday Sensor, Bayern) 05:00 bis 22:00. Bei jedem
+      Schaltzeitpunkt, nach dem HA-Start und beim Einschalten der Automatik wird der
+      Soll-Zustand neu berechnet, damit verpasste Schaltzeiten nachgeholt werden.
+    mode: restart
+    triggers:
+      - trigger: time
+        at: "05:00:00"
+        id: zeit
+      - trigger: time
+        at: "22:00:00"
+        id: zeit
+      - trigger: sun
+        event: sunrise
+        offset: "01:00:00"
+        id: zeit
+      - trigger: sun
+        event: sunset
+        offset: "-02:00:00"
+        id: zeit
+      - trigger: state
+        entity_id: input_boolean.weihnachtsbeleuchtung_automatik
+        to: "on"
+        id: zeit
+      - trigger: homeassistant
+        event: start
+        id: start
+    conditions:
+      - condition: state
+        entity_id: input_boolean.weihnachtsbeleuchtung_automatik
+        state: "on"
+    actions:
+      - if:
+          - condition: trigger
+            id: start
+        then:
+          - alias: Nach dem Start warten, bis Zigbee2MQTT und Govee wieder da sind
+            delay: "00:01:00"
+      - choose:
+          - alias: Soll an
+            conditions:
+              - condition: time
+                after: "05:00:00"
+                before: "22:00:00"
+              - condition: or
+                conditions:
+                  - alias: Wochenende oder Feiertag
+                    condition: state
+                    entity_id: binary_sensor.workday_sensor
+                    state: "off"
+                  - alias: Morgens bis Sonnenaufgang + 1 h
+                    condition: sun
+                    before: sunrise
+                    before_offset: "01:00:00"
+                  - alias: Abends ab Sonnenuntergang − 2 h
+                    condition: sun
+                    after: sunset
+                    after_offset: "-02:00:00"
+            sequence:
+              - action: homeassistant.turn_on
+                target:
+                  label_id: weihnachtsbeleuchtung
+                continue_on_error: true
+        default:
+          - action: homeassistant.turn_off
+            target:
+              label_id: weihnachtsbeleuchtung
+            continue_on_error: true
