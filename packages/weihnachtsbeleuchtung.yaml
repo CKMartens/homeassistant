@@ -23,7 +23,10 @@
 #   05:00–22:00, aber nur wenn binary_sensor.garten_dunkel an ist (Threshold-Helfer
 #   "Garten dunkel" auf sensor.hmip_slo_000d60c9a905f8_hochste_beleuchtungsstarke,
 #   lower 325 lx, Hysterese 25: an unter 300 lx, aus über 350 lx (seit 28.11. nachmittags, vorher 30/70 lx zu spät), je 5 min stabil).
-#   Fällt der Lichtsensor aus, gilt sun.sun below_horizon. Das Gartenlicht selbst
+#   Fällt der Lichtsensor aus, gilt sun.sun below_horizon. Das H702A wird beim
+#   Einschalten auf gelbliches Warmweiß (2200 K) gesetzt.
+#   Außerdem am Label: switch.garten_garten_brunnen (Elkes Außenbeleuchtung, seit 28.11.).
+#   Das Gartenlicht selbst
 #   hebt den Sensor nachts nur auf ca. 0,6 lx, also keine Rückkopplung.
 #   Weitere Außenbeleuchtung (z. B. am Brunnen-Stecker switch.garten_garten_brunnen):
 #   Label "Weihnachtsbeleuchtung außen" vergeben und automation.brunnen_einschalten
@@ -250,6 +253,13 @@ automation:
               - action: homeassistant.turn_on
                 target:
                   label_id: weihnachtsbeleuchtung_aussen
+                continue_on_error: true
+              - alias: Gartenlicht H702A warmweiß (2200 K)
+                action: light.turn_on
+                target:
+                  entity_id: light.h702a
+                data:
+                  color_temp_kelvin: 2200
                 continue_on_error: true
         default:
           - action: homeassistant.turn_off
