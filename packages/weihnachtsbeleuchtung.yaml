@@ -22,7 +22,7 @@
 #   läuft über automation.weihnachtsbeleuchtung_aussen_dunkelheit: jeden Tag gleich
 #   05:00–22:00, aber nur wenn binary_sensor.garten_dunkel an ist (Threshold-Helfer
 #   "Garten dunkel" auf sensor.hmip_slo_000d60c9a905f8_hochste_beleuchtungsstarke,
-#   lower 50 lx, Hysterese 20: an unter 30 lx, aus über 70 lx, je 5 min stabil).
+#   lower 325 lx, Hysterese 25: an unter 300 lx, aus über 350 lx (seit 28.11. nachmittags, vorher 30/70 lx zu spät), je 5 min stabil).
 #   Fällt der Lichtsensor aus, gilt sun.sun below_horizon. Das Gartenlicht selbst
 #   hebt den Sensor nachts nur auf ca. 0,6 lx, also keine Rückkopplung.
 #   Weitere Außenbeleuchtung (z. B. am Brunnen-Stecker switch.garten_garten_brunnen):
@@ -178,14 +178,14 @@ automation:
   # Außen nach Dunkelheit (UI-id weihnachtsbeleuchtung_aussen_dunkelheit).
   # Threshold-Helfer "Garten dunkel" in der UI anlegen (Helfer > Schwellenwert):
   #   Sensor sensor.hmip_slo_000d60c9a905f8_hochste_beleuchtungsstarke, Unterer
-  #   Grenzwert 50, Hysterese 20, entity_id danach auf binary_sensor.garten_dunkel.
+  #   Grenzwert 325, Hysterese 25, entity_id danach auf binary_sensor.garten_dunkel.
   - id: weihnachtsbeleuchtung_aussen_dunkelheit
     alias: Weihnachtsbeleuchtung außen – Dunkelheit
     description: >-
       Schaltet alles mit dem Label „Weihnachtsbeleuchtung außen“ (Gartenlicht
       H702A) zwischen 05:00 und 22:00 an, solange es im Garten dunkel ist
-      (binary_sensor.garten_dunkel, Lichtsensor Terrasse: an unter 30 lx, aus über
-      70 lx), sonst aus – an jedem Tag gleich. Fällt der Lichtsensor aus, gilt Sonne
+      (binary_sensor.garten_dunkel, Lichtsensor Terrasse: an unter 300 lx, aus über
+      350 lx), sonst aus – an jedem Tag gleich. Fällt der Lichtsensor aus, gilt Sonne
       unter dem Horizont. Rechnet nach dem HA-Start neu.
     mode: restart
     triggers:
