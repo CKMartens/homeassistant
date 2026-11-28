@@ -25,7 +25,8 @@
 #   lower 325 lx, Hysterese 25: an unter 300 lx, aus über 350 lx (seit 28.11. nachmittags, vorher 30/70 lx zu spät), je 5 min stabil).
 #   Fällt der Lichtsensor aus, gilt sun.sun below_horizon. Das H702A wird beim
 #   Einschalten auf gelbliches Warmweiß (2200 K) gesetzt.
-#   Außerdem am Label: switch.garten_garten_brunnen (Elkes Außenbeleuchtung, seit 28.11.). Das Gartenlicht selbst
+#   Außerdem am Label: switch.garten_garten_brunnen (Elkes Außenbeleuchtung, seit 28.11.).
+#   Das Gartenlicht selbst
 #   hebt den Sensor nachts nur auf ca. 0,6 lx, also keine Rückkopplung.
 #   Weitere Außenbeleuchtung (z. B. am Brunnen-Stecker switch.garten_garten_brunnen):
 #   Label "Weihnachtsbeleuchtung außen" vergeben und automation.brunnen_einschalten
