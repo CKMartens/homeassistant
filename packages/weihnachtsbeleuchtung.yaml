@@ -1,6 +1,6 @@
 # =============================================================================
 # Weihnachtsbeleuchtung – Zeitplan
-# Stand: 2026-11-27, live in HA als UI-Automation und UI-Helfer:
+# Stand: 2026-11-28, live in HA als UI-Automation und UI-Helfer:
 #   automation.weihnachtsbeleuchtung_zeitplan (UI-id weihnachtsbeleuchtung_zeitplan)
 #   input_boolean.weihnachtsbeleuchtung_automatik (UI-Helfer, Schalter für die Saison)
 #   Label "Weihnachtsbeleuchtung" (label_id weihnachtsbeleuchtung)
@@ -12,12 +12,24 @@
 #
 # Was geschaltet wird: alles mit dem Label "Weihnachtsbeleuchtung", derzeit
 #   switch.kuche_weihnachtsdeko_fenster, switch.essbereich_weihnachtsdeko_fenster
-#   (Z2M-Steckdosen) und light.h702a (Govee Gartenlicht). Weitere Lichter oder
+#   (Z2M-Steckdosen). Weitere Lichter oder
 #   Steckdosen: nur das Label vergeben, an der Automation ändert sich nichts.
 #   homeassistant.turn_on/turn_off schaltet light und switch gemischt.
 #   Den Automatik-Schalter NICHT labeln, sonst schaltet die Automation ihn selbst aus.
 #
-# Zeitplan:
+# AUSSEN (seit 2026-11-28): light.h702a (Govee Gartenlicht) trägt stattdessen das
+#   Label "Weihnachtsbeleuchtung außen" (label_id weihnachtsbeleuchtung_aussen) und
+#   läuft über automation.weihnachtsbeleuchtung_aussen_dunkelheit: jeden Tag gleich
+#   05:00–22:00, aber nur wenn binary_sensor.garten_dunkel an ist (Threshold-Helfer
+#   "Garten dunkel" auf sensor.hmip_slo_000d60c9a905f8_hochste_beleuchtungsstarke,
+#   lower 50 lx, Hysterese 20: an unter 30 lx, aus über 70 lx, je 5 min stabil).
+#   Fällt der Lichtsensor aus, gilt sun.sun below_horizon. Das Gartenlicht selbst
+#   hebt den Sensor nachts nur auf ca. 0,6 lx, also keine Rückkopplung.
+#   Weitere Außenbeleuchtung (z. B. am Brunnen-Stecker switch.garten_garten_brunnen):
+#   Label "Weihnachtsbeleuchtung außen" vergeben und automation.brunnen_einschalten
+#   aus lassen, sonst schaltet die Bewegung den Stecker nach 1 h wieder ab.
+#
+# Zeitplan (innen):
 #   Werktag (binary_sensor.workday_sensor = on, Bayern, Feiertage ausgenommen):
 #     an 05:00 bis Sonnenaufgang + 1 h, an Sonnenuntergang − 2 h bis 22:00
 #   Wochenende und Feiertag (workday = off): an 05:00 bis 22:00
@@ -162,3 +174,85 @@ automation:
                     actions:
                       - action: WEIHNACHTSBELEUCHTUNG_AUS
                         title: Automatik ausschalten
+
+  # Außen nach Dunkelheit (UI-id weihnachtsbeleuchtung_aussen_dunkelheit).
+  # Threshold-Helfer "Garten dunkel" in der UI anlegen (Helfer > Schwellenwert):
+  #   Sensor sensor.hmip_slo_000d60c9a905f8_hochste_beleuchtungsstarke, Unterer
+  #   Grenzwert 50, Hysterese 20, entity_id danach auf binary_sensor.garten_dunkel.
+  - id: weihnachtsbeleuchtung_aussen_dunkelheit
+    alias: Weihnachtsbeleuchtung außen – Dunkelheit
+    description: >-
+      Schaltet alles mit dem Label „Weihnachtsbeleuchtung außen“ (Gartenlicht
+      H702A) zwischen 05:00 und 22:00 an, solange es im Garten dunkel ist
+      (binary_sensor.garten_dunkel, Lichtsensor Terrasse: an unter 30 lx, aus über
+      70 lx), sonst aus – an jedem Tag gleich. Fällt der Lichtsensor aus, gilt Sonne
+      unter dem Horizont. Rechnet nach dem HA-Start neu.
+    mode: restart
+    triggers:
+      - trigger: state
+        entity_id: binary_sensor.garten_dunkel
+        to: "on"
+        for: "00:05:00"
+        id: zeit
+      - trigger: state
+        entity_id: binary_sensor.garten_dunkel
+        to: "off"
+        for: "00:05:00"
+        id: zeit
+      - trigger: time
+        at: "05:00:00"
+        id: zeit
+      - trigger: time
+        at: "22:00:00"
+        id: zeit
+      - trigger: state
+        entity_id: input_boolean.weihnachtsbeleuchtung_automatik
+        to: "on"
+        id: zeit
+      - trigger: homeassistant
+        event: start
+        id: start
+    conditions:
+      - condition: state
+        entity_id: input_boolean.weihnachtsbeleuchtung_automatik
+        state: "on"
+    actions:
+      - if:
+          - condition: trigger
+            id: start
+        then:
+          - alias: Nach dem Start warten, bis Lichtsensor und Govee wieder da sind
+            delay: "00:01:00"
+      - choose:
+          - alias: Soll an
+            conditions:
+              - condition: time
+                after: "05:00:00"
+                before: "22:00:00"
+              - condition: or
+                conditions:
+                  - alias: Garten dunkel
+                    condition: state
+                    entity_id: binary_sensor.garten_dunkel
+                    state: "on"
+                  - alias: Lichtsensor weg, dann nach Sonne
+                    condition: and
+                    conditions:
+                      - condition: state
+                        entity_id: binary_sensor.garten_dunkel
+                        state:
+                          - unavailable
+                          - unknown
+                      - condition: state
+                        entity_id: sun.sun
+                        state: below_horizon
+            sequence:
+              - action: homeassistant.turn_on
+                target:
+                  label_id: weihnachtsbeleuchtung_aussen
+                continue_on_error: true
+        default:
+          - action: homeassistant.turn_off
+            target:
+              label_id: weihnachtsbeleuchtung_aussen
+            continue_on_error: true
